@@ -1,0 +1,79 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
+int top = -1;
+void push(char *a, char num) {
+		a[++top] = num;
+}
+void pop(char *a) {
+	if (top == -1) {
+		return;
+	}
+		if (a[top] >= 10) {
+			printf("%c", a[top] + 55);
+		}
+		else {
+			printf("%d", a[top]);
+		}
+		top--;
+	}
+
+int transTen(char *a, int n) {
+	int len = (int)strlen(a);
+	int i,temp, value_Ten=0;
+	for (i =len-1; i>=0; i--) {
+		value_Ten += a[i] * pow(n,len-i-1);
+	}
+	return value_Ten;
+}
+
+int main() {
+	int n, N, len, i,Value_ten;
+	char a[100] = {0};
+	char value[100] = {0};
+	printf("*****进制转换器*****\n");
+	printf("请输入待转换数字的进制:");
+	scanf("%d", &n);
+	scanf("%*[^\n]");
+	scanf("%*c");
+	printf("请输入转换目标进制:");
+	scanf("%d", &N);
+	scanf("%*[^\n]");
+	scanf("%*c");
+	printf("请输入待转换数字:");
+	scanf("%s", a);
+	scanf("%*[^\n]");
+	scanf("%*c");
+	len = (int)strlen(a);
+	//转换字符串为数字//
+	for (i = 0; i < len; i++) {
+		if (!isalnum(a[i])) {
+			printf("error!");
+			getch();
+			exit(1);
+		}
+		else if (islower(a[i])) {
+			a[i] = a[i] - 87;
+		}
+		else if(isupper(a[i])){
+			a[i] = a[i] - 55;
+		}
+		else{
+			a[i] = a[i] - 48;
+		}
+	}
+	Value_ten = transTen(a, n);
+	printf("待转换数字化为十进制后为:%d\n",Value_ten);
+	printf("待转换数字化为%d进制后为:",N);
+	while(Value_ten){
+		push(value, Value_ten%N);
+		Value_ten /= N;
+	}
+	while (top >= 0) {
+		pop(value);
+	}
+	system("pause");
+	return 0;
