@@ -1,0 +1,128 @@
+#include <time.h>
+#include<stdlib.h>
+#include<stdio.h>
+#define MAXSIZE 10
+#define Queuemax 5
+#define COST_per_hour 2
+int position_Queue=0;
+typedef struct Car {
+	time_t Time;
+	int number;
+}Car;
+
+typedef struct PAS {
+	Car *Data;
+	int top_room;
+	int totalcar;
+}PAS;
+PAS *initPAS(){
+	Car *p = NULL;
+	PAS *a = NULL;
+	p= (Car*)malloc(sizeof(Car)*(MAXSIZE * 2 + 1));
+	a = (PAS *)malloc(sizeof(PAS*));
+	a->Data = p;
+	a->top_room = -1;
+	a->totalcar = 0;
+	return a;
+}
+
+void enQueue() {
+	if (position_Queue <= Queuemax) {
+		printf("汽车进入便道%d号位置\n", position_Queue);
+		position_Queue++;
+	}
+	else{
+		printf("便道空间已满,汽车无法进入！\n");
+	}
+}
+
+int quitQueue() {
+	if (position_Queue<=0) {
+		printf("便道空间已空\n");
+		return 0;
+	}
+	printf("便道%d号位置的车进入停车场\n", position_Queue-1);
+	position_Queue--;
+	return 1;
+}
+
+int enPAS(PAS *p) {
+	if (p->top_room== MAXSIZE - 1) {
+		printf("停车场已满\n");
+		return 0;
+	}
+	int num, pos;
+	pos = ++p->top_room;
+	p->Data[pos].Time= time((time_t*)NULL);
+	num=p->Data[pos].number = ++(p->totalcar);//为进入停车场的车赋予唯一编号//
+	printf("车辆成功进入停车场，编号%d,停车位置:%d\n",num,pos );
+	return 1;
+}
+
+int leavePAS(PAS *p, int num) {
+	if (num < 0) {
+		printf("停车编号错误!\n");
+		return 0;
+	}
+	int i, n, j;
+	float cost, time_hour;
+	for (i = 0; i <= p->top_room; i++) {//在停车场中匹配请求离开车辆的编号//
+		if (num == p->Data[i].number) {
+			break;
+		}
+	}
+	if (i > p->top_room) {
+		printf("停车场内无该编号车！\n");
+		return 0;
+	}
+	else {//找到车辆位置后让车辆离开停车场//
+		time_t now = time((time_t*)NULL);
+		n = p->top_room - i;//计算有几辆车需要退出停车场让路//
+		if (n != 0) {
+			for (j = MAXSIZE * 2; j > MAXSIZE * 2 - n; j--) {
+				p->Data[j] = p->Data[p->top_room--];
+			}//前n辆车进入缓冲区让路//
+		}
+		time_hour = (now - p->Data[i].Time) / (float)3600;
+		cost = time_hour * COST_per_hour;
+		printf("编号%d的车离开停车场，停留时间%.1f小时,应缴纳费用%.1f元。", p->Data[i].number, time_hour, cost);
+		p->top_room--;//目标车退出停车场//
+		if (n != 0) {//让路的车逐个返回停车场//
+			for (; j < MAXSIZE * 2; j++) {
+				p->Data[++p->top_room] = p->Data[j];
+			}
+		}
+		return 1;
+	}
+}
+int main() {
+	char order;
+	int num;
+	PAS *point =NULL;
+	point=initPAS();
+	printf("******停车场******\n");
+	printf("指令编号:(A).车辆进入停车场   (B).车辆离开停车场   (#).退出程序\n");
+	printf("请输入指令编号:");
+	while (scanf("%c", &order)) {
+		if (order == '#') {
+			break;
+		}
+		else if (order == 'A') {
+			if (enPAS(point) == 0) {
+				enQueue();
+			}
+		}
+		else if(order == 'B'){
+			printf("请输入车辆编号:");
+			scanf("%d", &num);
+			//调用车辆离开停车场函数，如果车辆离开成功,由于停车场空位加一，检查便道上是否存在车辆//
+			if (leavePAS(point, num)) {
+				if (quitQueue()) {
+					enPAS(point);
+				}
+			}
+
+		}
+	}
+	return 0;
+}
