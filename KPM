@@ -1,0 +1,62 @@
+/*KPM算法：花了三个下午才勉强把细节全部梳理完，在失败两次后，成功独立实现了一遍该算法。
+原理相对来说还算简单，关键是next数组生成及其改进的代码简洁而抽象，理解起来有难度。
+原理：如果模板字符串最前面的k个字符和当前位置j之前的最后k个字符是一样的，那么当j位置发生了不匹配，把当前位置从j跳到k+1再进行匹配；
+当在当前位置匹配成功时，当前的k=k+1，并赋值给next[j]，然后j++。据此算出模板字符串对应的next数组。
+有了next数组后，i,j分别记录待匹配链和模板链当前匹配位置，for循环一一匹配即可。匹配成功i++,j++；匹配失败j=next[j]，继续匹配，直到匹配结束。
+http://www.cnblogs.com/yjiyjige/p/3263858.html 找了不少博客帮助理解，这个博客对我帮助最大。*/
+
+#include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
+void Cre_next(char *T,int *next) {
+	int i = 0, j = -1;
+	next[0] = -1;
+	while (i <strlen(T)-1) {
+		if (j == -1 || T[i] == T[j]) {
+			if (T[++j] == T[++i]) {
+			
+				next[i] = next[j];
+			}
+			else {
+				next[i] = j;
+			}
+		}
+		else {
+			j = next[j];
+		}
+	}
+	for (int L = 0; L < strlen(T); L++) {
+		printf("%d ", next[L]);
+	}
+	
+}
+
+
+void KMP(char *S, char *T) {
+	int *next = (int *)malloc(sizeof(int)*(strlen(T)+1));
+	Cre_next(T, next);
+	int i = 0, j = 0;
+	while (i <=strlen(S) && j <=strlen(T)) {
+		if (j==-1||S[i] == T[j]) {
+			i++;
+			j++;
+		}
+		else {
+			j = next[j];
+		}
+	}
+	if (j >strlen(T)) {
+		printf("The first matched string is in the %d position!", i - (int)strlen(T)+1);
+	}
+	else {
+		printf("Matching is failed!");
+	}
+	free(next);
+	next = NULL;
+}
+
+int main() {
+	KMP("ababcabcacbab", "abcac");
+	system("pause");
+	return 0;
+}
