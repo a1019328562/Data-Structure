@@ -1,0 +1,144 @@
+/* 严书数据结构（C语言版）（第二版）P79
+算法3.22：表达式求值 
+此算法中的操作数只能是1位数
+耗时3小时，被伪代码坑了一把，严书上用的  case '['||'(':  会被转化为case 1：
+怪我没想清TVT
+*/
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<malloc.h>
+#define MAXSIZE 100
+typedef struct {
+	int * Base;
+	int *Rear;
+	int size;
+}stack,*ptr;
+
+void initStack(ptr p);
+void pushStack(ptr p, int a);
+void popStack(ptr p, int *a);
+char getTop(ptr p);
+int In(char ch);
+char Precede(ptr p, char ch);
+int Operate(int a, char theta, int b);
+void showStack(ptr p);
+
+int Evaluate() {
+	ptr OPND = (ptr)malloc(sizeof(stack));
+	ptr OPTR = (ptr)malloc(sizeof(stack));
+	int ch,a,b,theta,x;
+	initStack(OPND);
+	initStack(OPTR);
+	pushStack(OPTR, '#');
+	ch=getchar();
+	while (ch != '#' || getTop(OPTR) != '#') {
+		if (!In(ch)) {
+			pushStack(OPND, ch-48);
+			ch = getchar();
+		}
+		else {
+			switch (Precede(OPTR, ch)) {
+			case '>':
+				popStack(OPND, &b);
+				popStack(OPND, &a);
+				popStack(OPTR, &theta);
+				pushStack(OPND,Operate(a, theta, b));
+				showStack(OPND);
+				break;
+			case '<':
+				pushStack(OPTR, ch);
+				ch = getchar();
+				break;
+
+			case '=':
+				popStack(OPTR, &x);
+				ch = getchar();
+				break;
+			}
+		}
+	}
+	x = getTop(OPND);
+	free(OPND->Base);
+	free(OPTR->Base);
+	free(OPND);
+	free(OPTR);
+	OPND = OPTR = NULL;
+	return x;
+}
+
+int main() {
+	printf("Please input expression:");
+	getchar();
+	int result = Evaluate();
+	printf("Result:%d", result);
+	system("pause");
+	return 0;
+}
+
+void initStack(ptr p) {
+	p->Base = (int*)malloc(sizeof(int)*MAXSIZE+1);
+	p->Rear = p->Base;
+	p->size = MAXSIZE;
+};
+void pushStack(ptr p, int a) {
+	*(++p->Rear) = a;
+};
+void popStack(ptr p, int* a) {
+	if (p->Base == p->Rear) {
+		printf("Empty stack!");
+	}
+	else {
+		*a = *(p->Rear);
+		p->Rear--;
+	}
+};
+char getTop(ptr p) {
+	return *(p->Rear);
+};
+int In(char ch) {
+	if (ch >=48 && ch <= 57) {
+		return 0;
+	}
+	else return 1;
+};
+char Precede(ptr p, char ch) {
+	if (ch == '(') return '<';
+	else if (ch=='#') return '>';
+	switch (getTop(p)) {
+	case '+' :
+		if (ch == '+' || ch == '-'||ch==')') return '>';
+		else return '<';
+	case '-':
+		if (ch == '+' || ch == '-' || ch == ')') return '>';
+		else return '<';
+
+	case '(':
+		if (ch == ')') return '=';
+		else return '<';
+	case '#':
+		return '<';
+	default: 
+		if (ch == '(') return '<';
+		else return '>';
+
+	}
+};
+int Operate(int a, char theta, int b) {
+	switch (theta) {
+	case '+': return a+b;
+	case '-': return a - b;
+	case '*': return a * b;
+	default: return a / b;
+	}
+}
+
+void showStack(ptr p) {
+	int a;
+	int* tep = p->Base;
+	while (tep != p->Rear) {
+		a = *(++tep);
+		printf("%d ", a);
+	}
+	printf("\n");
+}
