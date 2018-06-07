@@ -1,0 +1,93 @@
+/*二叉树非递归的先序、中序、后序历遍*/
+#include<stdio.h>
+#include<stdlib.h>
+#include<malloc.h>
+#define MAXSIZE 100
+typedef struct BiTree {
+	int Data;
+	struct BiTree *Lchild;
+	struct BiTree *Rchild;
+}BiNod,*BiTree;
+
+typedef struct a {
+	BiNod* Stack[MAXSIZE];
+	BiTree* Head;
+	BiTree* Rear;
+	int size;
+}Stack;
+
+BiTree getTop(Stack s) {
+	if (s.Head != s.Rear) {
+		return *s.Rear;
+	}
+	else return 0;
+};
+
+BiTree popStack(Stack s) {
+	if (s.Rear==s.Head) return 0;
+	return *(--s.Rear);
+};
+void pushStack(Stack *s, BiTree p) {
+	if (s->Rear - s->Head == s->size) return 0;
+	*s->Rear = p;
+	s->Rear++;
+};
+
+void preOrder(BiTree p) {/*非递归先序历遍*/
+	Stack s;
+	s.Rear = s.Head = s.Stack;
+	s.size = MAXSIZE;
+	while (p!=NULL || getTop(s)) {
+		while (p!=NULL) {
+			printf("%d", p->Data);
+			pushStack(&s, p);
+			p = p->Lchild;
+		}
+		if (getTop(s)) {
+			p = popStack(s);
+			p = p->Rchild;
+		}
+	}
+}
+
+void inOrder(BiTree p) {/*非递归中序历遍*/
+	Stack s;
+	s.Rear = s.Head = s.Stack;
+	s.size = 100;
+	while (p != NULL || getTop(s)) {
+		while (p != NULL) {
+			pushStack(&s, p);
+			p = p->Lchild;
+		}
+		if (getTop(s)) {
+			p = popStack(s);
+			printf("%d", p->Data);
+			p = p->Rchild;
+		}
+	}
+}
+
+void postOrder(BiTree p) {/*非递归后序历遍*/
+	Stack s;
+	BiTree pre=NULL, temp;
+	s.Rear = s.Head = s.Stack;
+	s.size = 100;
+	while (p != NULL || getTop(s)) {
+		while (p != NULL) {
+			pushStack(&s, p);
+			p = p->Lchild;
+		}
+		if (temp = getTop(s)) {
+			/*若栈顶元素的右孩子存在，且pre未指向其右孩子，说明其右孩子尚未历遍，此时将p指向其右孩子，进入下一轮while循环；
+			否则直接出栈并输出栈顶元素，并将pre指针指向该元素。
+			*/
+			if (temp->Rchild != NULL && pre != temp->Rchild) {
+				p = temp->Rchild;
+			}
+			else {
+				pre = popStack(s);
+				printf("%d", pre->Data);
+			}
+		}
+		}
+	}
