@@ -1,0 +1,81 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MAXSIZE 10
+#define Null -1
+typedef struct a {
+	int Lchild;
+	int Rchild;
+}Tree;
+
+typedef struct b {
+	int a[MAXSIZE];
+	int *Top;
+	int *Base;
+}Queue;
+
+void pushQueue(Queue* q, int Data) {
+	*q->Top++ = Data;
+}
+
+int popQueue(Queue *q) {
+	if (q->Base == q->Top) return Null;
+	int temp;
+	temp = *q->Base++;
+	return temp;
+}
+
+int CreTree(int num, Tree *T) {
+	int Head = 0, Headfind[MAXSIZE];
+	char Lpos, Rpos;
+	for (int i = 0; i<num; i++)Headfind[i] = 0;
+	for (int i = 0; i<num; i++) {
+		scanf("%c %c", &Lpos, &Rpos);
+		scanf("%*[^\n]"); scanf("%*c");
+		if (Lpos != '-') {
+			Lpos = Lpos - '0';
+			Headfind[Lpos] = 1;
+			T[i].Lchild = Lpos;
+		}
+		else T[i].Lchild = Lpos;
+		if (Rpos != '-') {
+			Rpos = Rpos - '0';
+			Headfind[Rpos] = 1;
+			T[i].Rchild = Rpos;
+		}
+		else T[i].Rchild = Rpos;
+	}
+	while (Headfind[Head] && Head<num) {
+		Head++;
+	}
+	return Head;
+}
+
+int Tag = 0;
+Queue queue;
+
+void ListLeaves(Tree *T, int pos) {
+	if (T[pos].Lchild == '-'&&T[pos].Rchild == '-') {
+		if (Tag) printf(" %d", pos);
+		else {
+			Tag = 1;
+			printf("%d",pos);
+		}
+	}
+	if (T[pos].Lchild != '-') pushQueue(&queue, T[pos].Lchild);
+	if (T[pos].Rchild != '-') pushQueue(&queue, T[pos].Rchild);
+	pos = popQueue(&queue);
+	if (pos != Null) ListLeaves(T, pos);
+}
+
+int main() {
+	int N, Head;
+	Tree T[MAXSIZE];
+	queue.Top = queue.Base = queue.a;
+	scanf("%d", &N);
+	scanf("%*[^\n]"); scanf("%*c");
+	if (N < 1) return;
+	Head = CreTree(N, T);
+	ListLeaves(T, Head);
+	system("pause");
+	return 0;
+}
