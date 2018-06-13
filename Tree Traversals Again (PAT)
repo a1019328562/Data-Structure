@@ -1,0 +1,88 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#define MAXSIZE 30
+int preOrder[MAXSIZE], inOrder[MAXSIZE], postOrder[MAXSIZE];
+
+typedef struct b {
+	int Size;
+	int *Base;
+	int *Top;
+}stack;
+
+void iniStack(stack *S) {
+	S->Base = (int*)malloc(sizeof(int)*MAXSIZE);
+	S->Size = MAXSIZE;
+	S->Top = S->Base;
+}
+int pop(stack *S) {
+	if (S->Top == S->Base)return -1;
+	
+	int temp= *(--S->Top);
+	return temp;
+}
+
+void push(stack *S, int Data) {
+	*S->Top++ = Data;
+}
+void PostTraversal(int preLen, int inLen, int postLen, int n);
+
+int main() {
+	for (int i = 0; i < MAXSIZE; i++)
+	{
+		preOrder[i] = 0;
+		inOrder[i] = 0;
+		postOrder[i] = 0;
+	}
+
+	int N, Data;
+	char str[5] = {0};
+	stack S;
+	iniStack(&S);
+	scanf("%d", &N);
+	scanf("%*[^\n]"); scanf("%*c");
+	for (int i = 0, j = 0, k = 0; i<2 * N; i++) {
+		scanf("%s", str);
+		if (!strcmp(str,"Push")) {
+			scanf("%d", &Data);
+			scanf("%*[^\n]"); scanf("%*c");
+			preOrder[j++] = Data;
+			push(&S, Data);
+		}
+		else {
+			inOrder[k++] = pop(&S);
+		}
+	}
+	PostTraversal(0, 0, 0, N);
+	printf("%d", postOrder[0]);
+	for (int i = 1; i<N; i++) {
+		printf(" %d", postOrder[i]);
+	}
+	system("pause");
+}
+
+void PostTraversal(int preLen, int inLen, int postLen, int n) {
+	/*给出一棵树的前序、中序排列数组及其起始位置、后序排列数组的起始位置、该树长度。求该树的后序排列顺序并放入后序排列数组*/
+	/* 
+	思路如下：
+	1、确定树的根节点。树根是当前树中所有元素在前序遍历中最先出现的元素。 
+2、找出根节点在中序遍历中的位置。根左边的所有元素就是左子树，根右边的所有元素就是右子树。若根节点左边或右边为空，则该方向子树为空；若根节点左边和右边都为空，则根节点已经为叶子节点。 
+3、根据根节点位置计算出当前树的左子树在前、中、后序排列数组中相应的起始位置及长度，并以其为参数递归调用当前函数来求左子树的后序排列顺序并放入后序排列数组中相应位置。
+4、根据根节点位置计算出当前树的右子树在前、中、后序排列数组中相应的起始位置及长度，并以其为参数递归调用当前函数来求右子树的后序排列顺序并放入后序排列数组中相应位置。
+															   */
+	if (n == 0) return;
+	if (n == 1) {
+		postOrder[postLen] = preOrder[preLen];
+		return;
+	}/*如果当前树结点数为0则函数直接return，为1则直接将该节点放入后序排列数组中并return*/
+	int root, L, R, i;
+	root = preOrder[preLen];
+	postOrder[postLen + n - 1] = root;
+	for (i = 0; i<n; i++) {
+		if (inOrder[inLen + i] == root) break;
+	}
+	L = i;
+	R = n - L - 1;
+	PostTraversal(preLen + 1, inLen, postLen, L);
+	PostTraversal(preLen + 1 + L, inLen + L + 1, postLen + L, R);
+}
