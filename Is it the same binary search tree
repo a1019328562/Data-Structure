@@ -1,0 +1,101 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#define MAXSIZE 10
+
+typedef struct a {
+	int Data;
+	struct a *Lchild;
+	struct a *Rchild;
+}BinsearchNode, *BinsearchT;
+
+typedef struct b {
+	char *Seq[100];
+	int Top;
+	int Base;
+	int num;
+}SeqLine;
+
+void pushSeqLine(SeqLine* S, char* a) {
+	S->Seq[S->Top++] = a;
+	S->num++;
+};
+char *popSeqLine(SeqLine* S) {
+	if (S->Base == S->Top) return -1;
+	char *temp = S->Seq[S->Base++];
+	S->num--;
+	return temp;
+};
+
+BinsearchT ini_BinsearchT() {
+	BinsearchT T = (BinsearchT)malloc(sizeof(BinsearchNode));
+	T->Data = -1;
+	T->Lchild = NULL;
+	T->Rchild = NULL;
+	return T;
+};
+
+void delet_BinsearchT(BinsearchT T) {
+	if (T == NULL)return;
+	delet_BinsearchT(T->Lchild);
+	delet_BinsearchT(T->Rchild);
+	free(T);
+}
+
+void Cre_BinsearchT(BinsearchT T, int N) {
+	BinsearchT p;
+	for (int i = 0, input; i<N; i++) {
+		scanf("%d", &input);
+		if (T->Data == -1) T->Data = input;
+		else {
+			p = T;
+			while (p->Data>input&&p->Lchild != NULL || p->Data<input&&p->Rchild != NULL) {
+				if (p->Data > input) p = p->Lchild;
+				else p = p->Rchild;
+			}
+			if (p->Data>input) {
+				p->Lchild = ini_BinsearchT();
+				p->Lchild->Data = input;
+			}
+			else {
+				p->Rchild = ini_BinsearchT();
+				p->Rchild->Data = input;
+			}
+		}
+	}
+	scanf("%*[^\n]"); scanf("%*c");
+}
+
+int Cmp_BinsearchT(BinsearchT T1, BinsearchT T2) {
+	if (T1 == NULL || T2 == NULL) { 
+		if(T1 == T2)return 1;
+		else return 0;
+	}
+	if (T1->Data != T2->Data) return 0;
+	else return Cmp_BinsearchT(T1->Lchild, T2->Lchild) && Cmp_BinsearchT(T1->Rchild, T2->Rchild);
+}
+
+
+int main() {
+	int elemNum, seqNum;
+	BinsearchT iniTree, sampleTree;
+	SeqLine S;
+	S.Base = S.Top = S.num = 0;
+	scanf("%d", &elemNum);
+	while (elemNum) {
+		scanf("%d", &seqNum);
+		scanf("%*[^\n]"); scanf("%*c");
+		iniTree = ini_BinsearchT();
+		Cre_BinsearchT(iniTree, elemNum);
+		for (int i = 0; i<seqNum; i++) {
+			sampleTree = ini_BinsearchT();
+			Cre_BinsearchT(sampleTree, elemNum);
+			Cmp_BinsearchT(iniTree, sampleTree) ? pushSeqLine(&S,"Yes") : pushSeqLine(&S, "No");
+			delet_BinsearchT(sampleTree);
+		}
+		delet_BinsearchT(iniTree);
+		scanf("%d", &elemNum);
+	}
+	while (S.num) printf("%s\n", popSeqLine(&S));
+	return 0;
+}
