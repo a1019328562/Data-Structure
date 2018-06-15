@@ -1,0 +1,109 @@
+#include<stdio.h>
+#include<stdlib.h>
+typedef struct a {
+	int Data;
+	int Factor; //平衡因子//
+	struct a *Left;
+	struct a *Right;
+}BSTNode, *BST;
+
+BST init_BST() {
+	BST temp = (BST)malloc(sizeof(BSTNode));
+	temp->Left = temp->Right = NULL;
+	temp->Data = -1;
+	temp->Factor = 0;
+	return temp;
+};
+void Delete_BST(BST T) {
+	if (!T) return;
+	Delete_BST(T->Left);
+	Delete_BST(T->Right);
+	free(T);
+};
+
+BST Balance_BST(BST T, int Data) {
+	BST Max, Medi, Min;
+	if (Data<T->Data) {
+		if (Data<T->Left->Data) {//FF旋转//
+			Min = T->Left->Left;
+			Medi = T->Left;
+			Max = T;
+
+			Medi->Right = Max;
+			Max->Left = NULL;
+		}
+		else {//FR旋转//
+			Min = T->Left;
+			Medi = T->Left->Right;
+			Max = T;
+
+			Max->Left = Medi->Right;
+			Min->Right = Medi->Left;
+			Medi->Left = Min;
+			Medi->Right = Max;
+		}
+	}
+	else if (Data<T->Right->Data) {//RF旋转//
+		Min = T;
+		Medi = T->Right->Left;
+		Max = T->Right;
+
+		Min->Right = Medi->Left;
+		Max->Left = Medi->Right;
+		Medi->Left = Min;
+		Medi->Right = Max;
+	}
+	else { //RR旋转//
+		Min = T;
+		Medi = T->Right;
+		Max = T->Right->Right;
+
+		Medi->Left = Min;
+		Min->Right = NULL;
+	}
+	Min->Factor= DeepofTree(Min->Left) - DeepofTree(Min->Right);
+	Medi->Factor= DeepofTree(Medi->Left) - DeepofTree(Medi->Right);
+	Max->Factor= DeepofTree(Max->Left) - DeepofTree(Max->Right);
+	return Medi;
+}
+int DeepofTree(BST T) {//树的深度计算函数//
+	if (!T) return 0;
+	if (T->Left == NULL && T->Right == NULL) return 1;
+	else {
+		int Ldeep, Rdeep;
+		Ldeep = DeepofTree(T->Left);
+		Rdeep = DeepofTree(T->Right);
+		return Ldeep>Rdeep ? (Ldeep + 1) : (Rdeep + 1);
+	}
+}
+
+BST Insert_BST(BST T, BST Node) {//将Node节点插入到二叉搜索树并使之平衡//
+	if (!T || T->Data == -1) return Node;
+	else {
+		if (Node->Data<T->Data) T->Left = Insert_BST(T->Left, Node);
+		else T->Right = Insert_BST(T->Right, Node);
+		T->Factor = DeepofTree(T->Left) - DeepofTree(T->Right);//计算平衡因子//
+		if (T->Factor>1 || T->Factor<-1) {//如果当前节点发生失衡，平衡之//
+			T = Balance_BST(T, Node->Data);
+		}
+		return T;
+	}
+}
+
+
+
+
+int main() {
+	int N;
+	BST T=NULL, Node=NULL;
+	scanf("%d\n", &N);
+	for (int i = 0; i<N; i++) {
+		Node = init_BST();
+		scanf("%d", &Node->Data);
+		T = Insert_BST(T, Node);
+	}
+	printf("%d", T->Data);
+	Delete_BST(T);
+	T = NULL;
+	return 0;
+}
