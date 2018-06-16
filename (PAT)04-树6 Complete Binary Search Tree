@@ -1,0 +1,195 @@
+/*解题思路: 
+1、收Input数据并构建为普通二叉搜索树； 
+2、中序历遍，历遍结果用单链表接收，即得到非递增排序的Input数据单链表； 
+3、计算出待构建的完全二叉搜索树的深度 DeepofBST=（log2(N) + 1）, 
+以及完全二叉搜索树最后一层结点数 LastLayer_N= N - pow(2, DeepofBST - 1) + 1; 
+易知完全二叉搜索树中除最后一层外的DeepofBST-1层结点均满，且结点数num=pow(2,k-1),其中k为当前层次深度； 
+4、易知最后一层结点即为Input数据在非递增排列状态下的第1、3、5……2LastLayer_N-1个结点， 
+故从单链表中依次将第1、3、5……2LastLayer_N-1个结点压栈并删除； 
+5、待最后一层的LastLayer_N个结点全部入栈后，依次出栈并按从后往前的顺序储存到LevelOrder数组； 
+6、从单链表中按深度由深到浅一层层摘除余下结点并储存到LevelOrder数组（方式同第4步，每次摘除第1，3，5……2num-1共计num个）. 
+7、最终得到的LevelOrder数组输出前N个数据即为Output中所要求的层次历遍结果。*/
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#define MAXSIZE 1000
+#define ElementType int
+#define Data_Stack 0
+#define Tree_Stack 1
+typedef union Site {
+	ElementType *Data;
+	struct BST **Tree;
+}Site;
+
+typedef union Data {
+	ElementType Data;
+	struct BST *Tree;
+}Stack_Out;
+
+
+typedef struct BST {
+	ElementType Data;
+	struct BST *L;
+	struct BST *R;
+}BinNode, *BinTree;
+
+typedef struct LinkList {
+	ElementType Data;
+	struct LinkList *Next;
+}LinkNode, *LinkList;
+
+
+typedef struct stack {
+	Site Base;
+	Site Top;
+	int Tag;
+	int Size;
+}Stack;
+
+BinTree GetTop(Stack S) {
+	if (S.Base.Tree == S.Top.Tree) return NULL;
+	else return *(S.Top.Tree-1);
+};
+
+LinkList Ini_LinkList() {
+	LinkList Temp = (LinkList)malloc(sizeof(LinkNode));
+	Temp->Data = -1;
+	Temp->Next = NULL;
+}
+
+LinkList Insert_LinkList(LinkList Rear, ElementType Data) {
+	LinkList Temp = (LinkList)malloc(sizeof(LinkNode));
+	Temp->Data = Data;
+	Temp->Next = NULL;
+	Rear->Next = Temp;
+	return Rear->Next;
+}
+
+void Delete_Node(LinkList pre_Node) {//删除pre_Node的后面一个结点//
+	LinkList Temp = pre_Node->Next;
+	pre_Node->Next = Temp->Next;
+	free(Temp);
+}
+
+void Push_Stack(Stack *S, ElementType Data, BinTree T) {
+	if ((S->Base.Data) - (S->Top.Data) == MAXSIZE) {
+		printf("Stack is filled\n");
+		return;
+	}
+	else {
+		if (S->Tag == Data_Stack) {
+			*S->Top.Data = Data;
+			S->Top.Data++;
+		}
+		else {
+			*S->Top.Tree = T;
+			S->Top.Tree++;
+		}
+	}
+}
+Stack_Out Pop_Stack(Stack *S) {
+	if (S->Base.Data == S->Top.Data) {
+		printf("Stack is empty\n");
+	}
+	else {
+		Stack_Out Temp;
+		Temp.Tree = NULL;
+		Temp.Data = -1;
+		if (S->Tag == Data_Stack) Temp.Data = *--S->Top.Data;
+		else Temp.Tree = *--S->Top.Tree;
+		return Temp;
+	}
+}
+void Cre_LinkList(BinTree T, LinkList Rear){//对Input二叉搜索树进行中序历遍，得到非递减排序的Input链表//
+	Stack a;
+	a.Base.Tree = a.Top.Tree = (BinTree*)malloc(sizeof(BinNode*)*MAXSIZE);
+	a.Tag = Tree_Stack;
+	a.Size = MAXSIZE;
+	while (T || GetTop(a) != NULL) {
+		while (T) {
+			Push_Stack(&a,NULL, T);
+			T = T->L;
+		}
+		if (GetTop(a)) {
+			Stack_Out temp  = Pop_Stack(&a);
+			T = temp.Tree;
+			Rear = Insert_LinkList(Rear, T->Data);
+			T = T->R;
+		}
+	}
+}
+
+BinTree IniBST() {
+	BinTree Temp = (BinTree)malloc(sizeof(BinNode));
+	Temp->L = Temp->R =NULL;
+	Temp->Data = -1;
+	return Temp;
+};
+void Insert(BinTree BST, int N) {//构建Input数据的BST树//
+	BinTree Temp=NULL,Pos=NULL;
+	ElementType X;
+	for (int i = 0; i < N; i++) {
+		Pos = BST;
+		scanf("%d", &X);
+		if (Pos->Data == -1) Pos->Data = X;
+		else {
+			Temp = IniBST();
+			Temp->Data = X;
+			while (X<Pos->Data&&Pos->L || X>= Pos->Data&&Pos->R) {
+				Pos = X < Pos->Data ? Pos->L : Pos->R;
+			}
+			X < Pos->Data ? (Pos->L=Temp) : (Pos->R=Temp);
+		}
+	}
+}
+
+ElementType * LevelOrder_Cre(LinkList L, int num, ElementType *Rear, Stack *S) {
+	//思路：压栈待删除结点的Data域（L->Next->Data），Temp指针保存当前指针位置，当前指针前进两个结点，通过Temp指针删除完成压栈的结点//
+	LinkList Temp = NULL;
+	for (int i = 0; i<num; i++) {
+		Temp = L;
+		Push_Stack(S, L->Next->Data,NULL);
+		L = L->Next->Next;
+		Delete_Node(Temp); 
+		
+	}
+	for (int i = 0; i<num; i++) {
+		Stack_Out temp = Pop_Stack(S);
+			*Rear= temp.Data;
+			Rear--;
+	}
+	return Rear;
+}
+
+
+int main() {
+	int N, num, LastLayer_N, DeepofBST;
+	ElementType *Rear, LevelOrder[MAXSIZE];
+	LinkList InSeq = Ini_LinkList();
+	BinTree Input = IniBST();
+	Stack S;
+	S.Tag = Data_Stack;
+	S.Base.Data = S.Top.Data = (ElementType*)malloc(sizeof(ElementType)*MAXSIZE);
+	S.Size = MAXSIZE;
+	scanf("%d\n", &N);
+	Insert(Input,N);
+	DeepofBST = log2(N) + 1;//计算CBT树深度//
+	LastLayer_N = N - pow(2, DeepofBST - 1) + 1;//计算CBT树最后一层的节点数//
+	Cre_LinkList(Input, InSeq);//对Input二叉搜索树进行中序历遍，得到非递减排序的Input链表//
+	Rear = LevelOrder+ N-1;
+	Rear = LevelOrder_Cre(InSeq, LastLayer_N, Rear, &S);
+	//从单链表中摘除最后一层的结点并依次压栈，弹栈，储存到LevelOrder数组//
+	
+	for (int i = DeepofBST-1; i>0; i--) {//从单链表中按深度由深到浅一层层摘除余下结点并储存到LevelOrder数组//
+		num = pow(2, i-1);
+		Rear = LevelOrder_Cre(InSeq, num, Rear, &S);
+	}
+	for (int i = 0; i < N; i++) {
+		if (i == 0)printf("%d", LevelOrder[i]);
+		else printf(" %d", LevelOrder[i]);
+	}
+	system("pause");
+	return 0;
+
+}
