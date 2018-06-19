@@ -1,0 +1,58 @@
+#include<stdio.h>
+#include<Stdlib.h>
+#define MAXSIZE 1001
+#define MINDATA -10001 
+
+typedef struct MinHeap {
+	int *Data;
+	int Size;
+	int Capacity;
+}*MinHeap;
+
+MinHeap Ini_MinHeap() {
+	MinHeap H = (MinHeap)malloc(sizeof(struct MinHeap));
+	H->Data = (int*)malloc(sizeof(int)*MAXSIZE);
+	H->Size = 0;
+	H->Capacity = MAXSIZE - 1;
+	H->Data[0] = MINDATA;
+	return H;
+}
+
+void Insert(MinHeap H, int X) {
+	int i;
+	for (i = ++H->Size; H->Data[i / 2]>X; i /= 2) {
+		H->Data[i] = H->Data[i / 2];
+	}
+	H->Data[i] = X;
+}
+
+void Read(MinHeap H, int index) {
+	if (index>H->Size) printf("error index!\n");
+	else {
+		printf("%d", H->Data[index]);
+		for (int i = index / 2; i>1; i/= 2) {
+			printf(" %d", H->Data[i]);
+		}
+		printf(" %d\n", H->Data[1]);
+	}
+}
+int main() {
+	int N, M, Data, Index[MAXSIZE - 1];
+	MinHeap H = Ini_MinHeap();
+	scanf("%d %d\n", &N, &M);
+	for (int i = 0; i<N; i++) {
+		scanf("%d", &Data);
+		Insert(H, Data);
+	}
+
+	scanf("%*[^\n]"); scanf("%*c");
+	for (int i = 0; i<M; i++) {
+		scanf("%d", Index + i);
+	}
+	for (int i = 0; i<M; i++) {
+		Read(H, Index[i]);
+	}
+	system("pause");
+	return 0;
+
+}
