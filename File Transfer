@@ -1,0 +1,62 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MAXSIZE 10001
+
+int Net[MAXSIZE] = { 0 };
+int Output[MAXSIZE];
+int Size, Count = 0;
+
+int FindRoot(int Pos) {//最短路径压缩版//
+	if (Net[Pos] < 0) return Pos;
+	else return Net[Pos] = FindRoot(Net[Pos]);
+}
+void Connection(int Pos1, int Pos2) {
+	int Root1 = FindRoot(Pos1), Root2 = FindRoot(Pos2);
+	if (Root1 != Root2) {
+		if (Net[Root1] >= Net[Root2]) {
+			Net[Root1] = Net[Root1] + Net[Root2];
+			Net[Root2] = Root1;
+		}
+		else {
+			Net[Root2] = Net[Root1] + Net[Root2];
+			Net[Root1] = Root2;
+		}
+	}
+}
+void Check(int Pos1, int Pos2) {
+	int Root1 = FindRoot(Pos1), Root2 = FindRoot(Pos2);
+	if (Root1 == Root2) Output[Count] = 1;//若两台电脑已连接则记录1，否则记录0//
+	else Output[Count] = 0;
+	Count++;
+}
+
+int main() {
+	int Pos1, Pos2,i, Components = 0, NumofRoot = 0;
+	char Instruction;
+	scanf("%d\n", &Size);
+	scanf("%c", &Instruction);
+	for (int i = 1; i <= Size; i++) {//初始化数组前Size个下标中的值为-1，代表该电脑为电脑并集的根节点，且该并集中含1台电脑（数组内负数的绝对值）//
+		Net[i] = -1;
+	}
+	for (; Instruction != 'S'; scanf("%c", &Instruction)) {
+		scanf("%d %d", &Pos1, &Pos2);
+		scanf("%*[^\n]"); scanf("%*c");
+		if (Instruction == 'I') Connection(Pos1, Pos2);
+		else Check(Pos1, Pos2);
+	}
+	for (int i = 0; i<Count; i++) {
+		Output[i] == 1 ? printf("Yes\n") : printf("No\n");
+	}
+
+	for (i = 1; i <= Size; i++) {
+		if (Net[i]<0) {
+			if (Net[i] + Size == 0) {
+				break;
+			}
+			else Components++;
+		}
+	}
+	i>Size ? printf("There are %d components.", Components) : printf("The network is connected.");
+	system("pause");
+	return 0;
+}
