@@ -1,0 +1,231 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#define MAXSIZE 63
+#define MINDATA -1
+#define MAXDATA 1001
+typedef struct HuffmanT {
+	char Character;
+	int Frequency;
+	struct HuffmanT *L;
+	struct HuffmanT *R;
+	struct HuffmanT *Parent;
+}*HuffmanT,HuffmanT_Node;
+
+typedef struct MinHeap {
+	HuffmanT* Data;
+	int Size;
+	int Capacity;
+}*MinHeap;
+
+typedef struct Stack {
+	HuffmanT* Base;
+	HuffmanT* Top;
+	int Size;
+}*Stack;
+
+typedef struct Code {
+	char Code[MAXSIZE+1];
+	char character;
+	int Frequency;
+}Code;
+
+HuffmanT Ini_HuffmanT() {
+	HuffmanT Temp = (HuffmanT)malloc(sizeof(HuffmanT_Node));
+	Temp->L = Temp->R = Temp->Parent = NULL;
+	Temp->Character = 0;
+	Temp->Frequency = 0;
+	return Temp;
+}
+
+Stack Ini_Stack() {
+	Stack S=(Stack)malloc(sizeof(struct Stack));
+	S->Top=S->Base = (HuffmanT*)malloc(sizeof(HuffmanT)*MAXSIZE);
+	S->Size = 0;
+	return S;
+}
+
+void push(Stack S, HuffmanT T) {
+	(*S->Top++) = T;
+	S->Size++;
+}
+
+HuffmanT pop(Stack S) {
+	if(S->Size == 0) {printf("Empty Stack\n"); return NULL; }
+	else {
+		HuffmanT Temp = *--S->Top;
+		S->Size--;
+		return Temp;
+	}
+}
+
+MinHeap Ini_MinHeap() {
+	MinHeap T = (MinHeap)malloc(sizeof(struct MinHeap));
+	T->Data= (HuffmanT*)malloc(sizeof(HuffmanT)*(MAXSIZE+1));
+	T->Data[0] = (HuffmanT)malloc(sizeof(HuffmanT_Node));
+	T->Data[0]->Frequency = MINDATA;
+	T->Data[0]->L = NULL;
+	T->Data[0]->R = NULL;
+	T->Data[0]->Parent = NULL;
+
+	T->Capacity = MAXSIZE;
+	T->Size = 0;
+	return T;
+}
+
+FreeMinHeap(MinHeap H) {
+	free(H->Data[0]);
+	free(H->Data);
+	free(H);
+
+}
+
+void FreeTree(HuffmanT T) {
+	if (!T)return;
+	if(T->L||T->R){
+		FreeTree(T->L);
+		FreeTree(T->R);
+	}
+	free(T);
+}
+
+void Insert_MinHeap(MinHeap H, HuffmanT X) {
+	int pos;
+	for (pos = ++H->Size; H->Data[pos / 2]->Frequency> X->Frequency; pos /= 2) {
+		H->Data[pos]= H->Data[pos / 2];
+	}
+	H->Data[pos] = X;
+}
+
+HuffmanT Delete_MinHeap(MinHeap H) {
+	if (H->Size == 0)return NULL;
+	if (H->Size == 1) { H->Size--; return H->Data[1]; }
+	else {
+		HuffmanT Min = H->Data[1], Last = H->Data[H->Size--];
+		int pos;
+		for (pos = 2; pos <= H->Size; pos *= 2) {
+			if (pos != H->Size&&H->Data[pos]->Frequency>H->Data[pos + 1]->Frequency) pos++;
+			if (Last->Frequency<H->Data[pos]->Frequency) break;
+			else {
+				H->Data[pos / 2] = H->Data[pos];
+			}
+		}
+		H->Data[pos / 2] = Last;
+		return Min;
+	}
+}
+
+HuffmanT Cre_Huffman(MinHeap H) {
+	int Size = H->Size;
+	HuffmanT F_Merge=NULL;
+	for (int i = 1; i < Size; i++) {
+		F_Merge = (HuffmanT)malloc(sizeof(HuffmanT_Node));
+		F_Merge->L = Delete_MinHeap(H);
+		F_Merge->R = Delete_MinHeap(H);
+		F_Merge->L->Parent = F_Merge->R->Parent=F_Merge;
+		F_Merge->Parent = NULL;
+		F_Merge->Frequency = F_Merge->L->Frequency + F_Merge->R->Frequency;
+		F_Merge->Character = 0;
+		Insert_MinHeap(H, F_Merge);
+	}
+	return F_Merge;
+}
+
+int  PathLength(HuffmanT T) {
+	int Lenth = 0;
+	while (T->Parent) {
+		T = T->Parent;
+		Lenth++;
+	}
+	return Lenth;
+}
+
+int WPL(HuffmanT T) {
+	Stack S = Ini_Stack();
+	int WPL=0;
+	while (T || S->Size != 0) {
+		while (T) {
+			push(S, T);
+			T = T->L;
+		}
+		T = pop(S);
+		if (T->L == NULL && T->R == NULL) WPL += PathLength(T)*T->Frequency;
+		T = T->R;
+	}
+	free(S);
+	return WPL;
+}
+
+int Judge_prefix(HuffmanT T,Code C) {
+	int Len = strlen(C.Code),Count=0;
+	HuffmanT Temp;
+	for (int i = 0; i <Len; i++) {
+		if (C.Code[i]=='0'&&T->L==NULL||C.Code[i]=='1'&&T->R==NULL) {
+			Temp = Ini_HuffmanT();
+			Temp->Parent = T;
+			if (i == Len-1) {
+				Temp->Character = C.character;
+				Temp->Frequency = C.Frequency;
+				Count = 1;
+			}
+			(C.Code[i] == '0')? (T->L = Temp): (T->R = Temp);
+		}
+ 
+			T = (C.Code[i] == '0') ? T->L : T->R;
+			
+	}
+	return Count;
+}
+
+
+int Judgement(Code* Total,int N,int MinWPL) {
+	int W;
+	HuffmanT T = Ini_HuffmanT();
+	for (int i = 0; i < N; i++)
+	{
+		if (Judge_prefix(T, Total[i]) == 0) {
+			FreeTree(T);
+			return 0;
+		}
+	}
+	W = WPL(T);
+	FreeTree(T);
+	if (MinWPL == W) return 1; 
+	else return 0;
+
+}
+
+int main() {
+	int N, M,Min_WPL;
+	Code Total[MAXSIZE];
+	MinHeap H= Ini_MinHeap();
+	scanf("%d\n", &N);
+	HuffmanT Temp=NULL;
+	for (int i = 0; i < N; i++) {
+		scanf("%c %d ", &Total[i].character, &Total[i].Frequency);
+		Temp = Ini_HuffmanT();
+		Temp->Character = Total[i].character;
+		Temp->Frequency = Total[i].Frequency;
+		Insert_MinHeap(H, Temp);
+	}
+	scanf("%d\n", &M);
+	HuffmanT HuffTree= Cre_Huffman(H);
+	Min_WPL = WPL(HuffTree);
+	int* Output = (int*)malloc(sizeof(int)*M);
+	for (int i = 0; i < M; i++) {
+		for (int j = 0; j < N; j++) {
+			if((i==M-1)&&(j==N-1))scanf("%*c %s", Total[j].Code);
+			else scanf("%*c %s\n", Total[j].Code);
+		}
+		Output[i] = Judgement(Total, N, Min_WPL);
+	}
+	for (int i = 0; i < M; i++) {
+		Output[i] ? printf("Yes\n") : printf("No\n");
+	}
+	FreeTree(HuffTree);
+	free(Output);
+	FreeMinHeap(H);
+	system("pause");
+	return 0;
+
+}
