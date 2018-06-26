@@ -1,0 +1,83 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<math.h>
+#define MAXSIZE 100
+#define MAXPOS 1000
+#define YES 1
+#define NO 0
+#define DIAMETER 15
+typedef struct VNode {
+	int x, y;
+}AdjList[MAXSIZE],VNode;
+
+typedef struct GNode {
+	int N_Vetex;
+	AdjList G;
+	int D;
+}*Graph;
+
+Graph newGraph() {
+	Graph T = (Graph)malloc(sizeof(struct GNode));
+	scanf("%d %d\n", &T->N_Vetex, &T->D);
+	for (int i = 0; i < T->N_Vetex; i++) {
+		T->G[i].x = MAXPOS;
+		T->G[i].y = MAXPOS;
+	}
+	return T;
+}
+
+int IsExit(VNode Node,int D) {/*当顶点的横坐标或纵坐标的绝对值与50的差值不大于007能跳跃的距离时，该顶点即为出口*/
+	if (abs(Node.x) > abs(Node.y)) {
+		return 50 - abs(Node.x) > D ? NO : YES;
+	}
+	else return 50 - abs(Node.y) > D ? NO : YES;
+	
+}
+
+int IsEntrance(VNode Node, int D) {/*当顶点到原点的距离不大于dish半径加上007能跳跃的距离之和时，该顶点即为007从dish进入湖中的入口*/
+	return ((int)pow(D + DIAMETER/2, 2)) < (int)(pow(Node.x, 2) + pow(Node.y, 2)) ? NO : YES;
+}
+
+int IsConnected(VNode Node1, VNode Node2, int D) {/*当两个顶点之间的距离不大于等于007能够跳跃的距离时，认为两个顶点之间是连通的*/
+	return ((int)pow(D, 2)) < (int)(pow(Node1.x - Node2.x, 2) + pow(Node1.y - Node2.y, 2)) ? NO : YES;
+}
+
+int Vetex[MAXSIZE] = { 0 };/*将每个顶点初始化为0，即未访问状态*/
+int Escape = NO;/*初始化逃脱标志为0*/
+
+void DFS(VNode Node,Graph T) {
+	for (int i = 0; i < T->N_Vetex&&!Escape;i++) {/*当访问完所有顶点后或者逃脱标志为1时，结束循环*/
+		if (Vetex[i])continue;
+		else if (IsConnected(Node, T->G[i], T->D)) {
+			Vetex[i] = YES;
+			if (IsExit(T->G[i], T->D)) Escape=YES;/*当找到出口时，将逃脱标志设置为1*/
+			else{
+			DFS(T->G[i], T);
+			}
+		}
+	}
+}
+
+Graph CreVetex() {
+	Graph T = newGraph();
+	for (int i = 0; i < T->N_Vetex-1; i++) {
+		scanf("%d %d\n", &T->G[i].x, &T->G[i].y);
+	}
+	scanf("%d %d", &T->G[T->N_Vetex - 1].x, &T->G[T->N_Vetex - 1].y);
+	return T;
+}
+
+int main(){
+	Graph T = NULL;
+	T = CreVetex();
+for (int i = 0; i < T->N_Vetex&&!Escape; i++) {/*当访问完所有顶点后或者逃脱标志为1时，结束循环*/
+	if (IsEntrance(T->G[i], T->D)) {/*对每一个入口依次进行深度优先搜索，直到找到出口或者历遍完所有入口*/
+		Vetex[i] = YES;
+		DFS(T->G[i], T);
+	}
+} 
+Escape ? printf("Yes\n") : printf("No\n");
+free(T);
+return 0;
+}
