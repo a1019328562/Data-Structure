@@ -1,0 +1,143 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<math.h>
+#define MAXSIZE_Vetex 10000
+#define index int
+
+typedef struct InSixNode {
+	index pos;
+	int Distance;
+}*Ptrto_InSixNode, InSixNode;
+
+typedef struct AdjNode {
+	struct AdjNode *Next;
+	index pos;
+}AdjNode,*PtrtoAdjNode;
+
+typedef struct Edge {
+	index V1, V2;
+}Edge;
+
+typedef struct VNode {
+	PtrtoAdjNode FirstNode;
+}AdjList[MAXSIZE_Vetex+1];
+
+typedef struct Graph{
+	AdjList VList;
+	int N_Vetex, N_Edge;
+}*PtrtoGraph;
+
+PtrtoGraph IniGraph() {
+	PtrtoGraph T = (PtrtoGraph)malloc(sizeof(struct Graph));
+	T->N_Edge = 0;
+	T->N_Vetex = 0;
+	for (int i = 1; i < MAXSIZE_Vetex+1; i++) {
+		T->VList[i].FirstNode = NULL;
+	}
+	return T;
+}
+
+void AddEdge(PtrtoGraph G, Edge E) {
+	PtrtoAdjNode T =(PtrtoAdjNode)malloc(sizeof(AdjNode));
+	T->pos = E.V2;
+	T->Next = G->VList[E.V1].FirstNode;
+	G->VList[E.V1].FirstNode = T;
+
+	T = (PtrtoAdjNode)malloc(sizeof(AdjNode));
+	T->pos = E.V1;
+	T->Next = G->VList[E.V2].FirstNode;
+	G->VList[E.V2].FirstNode = T;
+}
+
+typedef struct Queue {
+	Ptrto_InSixNode Base;
+	Ptrto_InSixNode Top;
+	Ptrto_InSixNode Queue;
+}*PtrtoQueue;
+
+index* Vetex;/*用来记录顶点是否被访问*/
+int Count=0;/*用来记录与初始顶点距离不超过6的结点数*/
+PtrtoQueue Q = NULL;/*队列用来保存待历遍的顶点及其与初始顶点的距离*/
+
+PtrtoQueue IniQueue() {
+	PtrtoQueue Q = (PtrtoQueue)malloc(sizeof(struct Queue));
+	Q->Queue=Q->Base = Q->Top = (Ptrto_InSixNode)malloc(sizeof(InSixNode)*MAXSIZE_Vetex * 33);
+	return Q;
+}
+
+void PushQueue(PtrtoQueue Q, InSixNode p) {
+	*Q->Top++ = p;
+}
+
+InSixNode PopQueue(PtrtoQueue Q) {
+	InSixNode Temp;
+	Temp.pos = -1;
+	if (Q->Base != Q->Top) Temp = *Q->Base++;
+	return Temp;
+}
+ 
+void BFS(index pos,PtrtoGraph G,int Distance) {/*Distance指示当前顶点的邻接顶点距离初始顶点的距离*/
+	InSixNode Node;
+	Node.Distance = Distance;
+	if(Distance<=6){/*如果Distance不大于6,将当前顶点的邻接顶点一一历遍并压入队列*/
+	PtrtoAdjNode P= G->VList[pos].FirstNode;
+	while (P) {
+		if(Vetex[P->pos]==0){
+		Vetex[P->pos] = 1;
+		Count++;
+		Node.pos = P->pos;
+		PushQueue(Q, Node);
+		}
+		P = P->Next;
+	}
+	}
+	Node = PopQueue(Q);
+	if (Node.pos != -1) BFS(Node.pos, G, Node.Distance + 1);
+}
+
+void DeleteGraph(PtrtoGraph G) {
+	PtrtoAdjNode p;
+	for (int i = 1; i < G->N_Vetex; i++) {
+		if(G->VList[i].FirstNode){
+		while (p = G->VList[i].FirstNode->Next) {
+			G->VList[i].FirstNode->Next = p->Next;
+			free(p);
+		}
+		free(G->VList[i].FirstNode);
+		}
+		
+	}
+	free(G);
+}
+
+
+int main() {
+	float Percent;
+	Edge Temp;
+	PtrtoGraph G = IniGraph();
+	scanf("%d %d\n", &G->N_Vetex, &G->N_Edge);
+	for (int i = 1; i <=G->N_Edge-1; i++) {/*将Input数据依次接收并以邻接结点的方式插入邻接表中*/
+		scanf("%d %d\n", &Temp.V1, &Temp.V2);
+		AddEdge(G, Temp);
+	}
+	scanf("%d %d", &Temp.V1, &Temp.V2);
+	AddEdge(G, Temp);
+
+	for (index i = 1; i <=G->N_Vetex; i++) {
+		Vetex = (index*)malloc((G->N_Vetex + 1) * sizeof(index));
+		Q = IniQueue();
+		for (int j = 1; j <= G->N_Vetex; j++) {
+			Vetex[j] = 0;
+		}
+		Count = 1;
+		Vetex[i] = 1;
+		BFS(i, G, 1);
+		Percent = Count*100 / (float)G->N_Vetex;
+		printf("%d: %.2f%%\n", i,Percent);
+		free(Vetex);
+		free(Q->Queue);
+		free(Q);
+	}
+	DeleteGraph(G);
+}
