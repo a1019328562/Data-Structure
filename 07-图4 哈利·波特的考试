@@ -1,0 +1,148 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<math.h>
+typedef struct Answer {
+	int pos;
+	int Len;
+}Answer;
+#define Impossible -1
+#define Empty 0
+#define MAXSIZE 100
+#define MAXDISTANCE 10000
+#define MAXLen 10000
+
+Answer Result;
+typedef struct AdjNode {
+	int Index;
+	int Len;
+	struct AdjNode *Next;
+}*AdjNode;
+
+typedef struct VNode {
+	AdjNode FistNode;
+}*VNode,VList[MAXSIZE+1];
+
+typedef struct Edge {
+	int V1, V2;
+	int Len;
+}Edge;
+
+typedef struct Graph {
+	int Vetex, Edge;
+	VList L;
+}*Graph;
+
+void DeletGraph(Graph G) {
+	AdjNode p;
+	for (int i = 1; i <=G->Vetex; i++) {
+		while (p = G->L[i].FistNode->Next) {
+			G->L[i].FistNode->Next = p->Next;
+			free(p);
+		}
+		free(G->L[i].FistNode);
+	}
+	free(G);
+}
+
+void AddEdge(Graph G, Edge E) {
+	AdjNode T = (AdjNode)malloc(sizeof(struct AdjNode));
+	T->Index = E.V2;
+	T->Len = E.Len;
+	T->Next = G->L[E.V1].FistNode;
+	G->L[E.V1].FistNode = T;
+
+	T = (AdjNode)malloc(sizeof(struct AdjNode));
+	T->Index = E.V1;
+	T->Len = E.Len;
+	T->Next = G->L[E.V2].FistNode;
+	G->L[E.V2].FistNode = T;
+}
+
+Graph CreGraph() {
+	Edge E;
+	Graph G = (Graph)malloc(sizeof(struct Graph));
+	scanf("%d %d\n", &G->Vetex, &G->Edge);
+	for (int i = 1; i <= G->Vetex; i++) {
+		G->L[i].FistNode = NULL;
+	}
+	for (int i = 0; i < G->Edge-1; i++) {
+		scanf("%d %d %d\n", &E.V1, &E.V2, &E.Len);
+		AddEdge(G, E);
+	}
+	scanf("%d %d %d", &E.V1, &E.V2, &E.Len);
+	AddEdge(G, E);
+	return G;
+}
+
+int FindMin(int* Distance,int N,int* isVisited) {
+	int pos,Min=MAXDISTANCE+1;
+	for (int i = 1; i <=N; i++) {
+		if (!isVisited[i] && Distance[i] < Min) {
+			pos = i;
+			Min = Distance[i];
+		}
+	}
+	switch (Min) {
+	case MAXDISTANCE + 1:return Empty;
+	case MAXDISTANCE:return Impossible;
+	}
+	return pos;
+}
+
+
+
+int isSolve(Graph G,int S) {
+	int isVisited[MAXSIZE + 1] = { 0 };
+	int Distance[MAXSIZE + 1];/*该数组用于记录从S顶点到下标对应顶点的当前最短路径*/
+	int Position[MAXSIZE + 1] = { 0 };/*该数组用于记录下标对应顶点沿最短路径方向的前一个顶点*/
+	int pos,Len=0;
+	AdjNode Temp, p;
+	p = G->L[S].FistNode;
+	for (int i = 1; i <= G->Vetex; i++) Distance[i]=MAXDISTANCE;
+	isVisited[S] = 1;/*首先访问源顶点S*/
+	Distance[S] = 0;
+	while (p) {/*对S的每一个邻接顶点，将其在Distance和Position数组中对应的值分别设置为边的权重以及S*/
+		Position[p->Index] = S;
+		Distance[p->Index] = p->Len; 
+		p = p->Next;
+	}
+
+	while (1) {
+		pos = FindMin(Distance, G->Vetex,isVisited);
+		if (pos == Impossible) { return Impossible;}
+		else if (pos == Empty) break;
+		else {
+			isVisited[pos] = 1;
+			Temp = G->L[pos].FistNode;
+			while (Temp) {
+				if (isVisited[Temp->Index] == 0 && Distance[Temp->Index] > Distance[pos] + Temp->Len) {
+					Distance[Temp->Index] = Distance[pos] + Temp->Len;
+					Position[Temp->Index] = pos;
+				}
+				Temp = Temp->Next;
+			}
+		}
+	}
+
+		for (int i = 1; i <=G->Vetex; i++) {/*找到当前最短路径图中路径最长的终点顶点，即最难变的那种动物*/
+			if (Distance[i] > Len) Len = Distance[i];
+		}
+		if (Result.Len > Len) {/*如果当前最难变的那种动物的魔咒长度大于Result中的魔咒长度，替换之*/
+			Result.pos = S;
+			Result.Len = Len;
+		}
+		return 1;
+	}
+
+int main() {
+	Graph G = CreGraph();
+	Result.pos = 0;
+	Result.Len =MAXLen;
+	for (int i = 1; i <= G->Vetex; i++) {
+		if (isSolve(G, i) == Impossible) break;
+	}
+	Result.pos == 0 ? printf("%d", Result.pos) : printf("%d %d", Result.pos, Result.Len);
+	DeletGraph(G);
+	return 0;
+}
