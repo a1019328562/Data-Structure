@@ -1,0 +1,135 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<math.h>
+#define Index int
+#define MAXSIZE 100
+#define Coordinate int
+#define DIAMETER 15.0
+#define No 0
+#define Yes 1
+typedef struct Results {
+	int Distance;
+	int* Road;
+}Results;
+
+Results Output;
+
+typedef struct VertexNode {
+	Coordinate x, y;
+	int Exit_Tag;/*用于指示顶点是否为出口，即能否从该顶点直接跳到岸上*/
+}VertexList[MAXSIZE+1],VertexNode;
+
+typedef struct Queue{
+	Index *Base;
+	Index *Top;
+	Index *Head;
+}*Queue;
+
+typedef struct Graph {
+	int N_Vertex,Distance,N_Entrance;
+	VertexList L;
+}*Graph;
+
+int isExit(int Distance, VertexNode A) {/*判断顶点是否为出口，即绝对值较大的坐标绝对值与50的差是否不大于007能跳的距离*/
+	if (abs(A.x) > abs(A.y)) {
+		return 50 - abs(A.x) > Distance ? No : Yes;
+	}
+	else return 50 - abs(A.y) > Distance ? No : Yes;
+}
+
+Graph CreGraph() {
+	Graph G = (Graph)malloc(sizeof(struct Graph));
+	scanf("%d %d\n", &G->N_Vertex, &G->Distance);
+	G->N_Entrance = 0;
+	for (int i = 1; i < G->N_Vertex; i++) {
+		scanf("%d %d\n", &G->L[i].x, &G->L[i].y);
+		if (G->L[i].Exit_Tag = isExit(G->Distance, G->L[i])) G->N_Entrance++;
+
+	}
+	scanf("%d %d", &G->L[G->N_Vertex].x, &G->L[G->N_Vertex].y);
+	if (G->L[G->N_Vertex].Exit_Tag = isExit(G->Distance, G->L[G->N_Vertex])) G->N_Entrance++;
+	return G;
+}
+
+Queue IniQueue() {
+	Queue Temp = (Queue)malloc(sizeof(struct Queue));
+	Temp->Base = Temp->Head = Temp->Top = (Index*)malloc(sizeof(int)*(MAXSIZE + 1));
+	return Temp;
+}
+void EnQueue(Queue Q, Index pos) {
+	*Q->Top++ = pos;
+};
+int isEmpty(Queue Q) {
+	return Q->Base == Q->Top ? Yes : No;
+}
+Index DeQueue(Queue Q) {
+	Index pos = *Q->Base++;
+	return pos;
+};
+int isAdjacent(int D, VertexNode Node1, VertexNode Node2) {/*判断两个顶点之间是否相邻，即007是否能从其中一个顶点跳到另一个*/
+	return ((int)pow(D, 2)) < (int)(pow(Node1.x - Node2.x, 2) + pow(Node1.y - Node2.y, 2)) ? No : Yes;
+}
+void DeleteQueue(Queue Q) {
+	free(Q->Head);
+	free(Q);
+};
+
+void BFS(Graph G, Index pos) {/*无权图的单源最短路算法*/
+	Index i,Temp;
+	Index Dist[MAXSIZE + 1] = { 0 };
+	Index Prior[MAXSIZE + 1] = { 0 };
+	Queue Q = IniQueue();
+	Dist[pos] = 1;
+	EnQueue(Q, pos);
+	while (!isEmpty(Q)) {
+		Temp = DeQueue(Q);
+		for (i = 1; i <=G->N_Vertex; i++) {/*历遍所有顶点寻找当前顶点的邻接顶点，并依次访问然后压入队列*/
+			if (Dist[i]==0&& isAdjacent(G->Distance, G->L[Temp], G->L[i])) {
+				Dist[i] = Dist[Temp] + 1;
+				Prior[i] = Temp;
+				if (G->L[i].Exit_Tag) {
+					DeleteQueue(Q);
+					if (Output.Distance != 0) {/*如果寻找到了出口但该逃脱路线并非最短路径则无需更新最短路径，return即可*/
+						if (Dist[i] + 1 > Output.Distance || Dist[i] + 1 == Output.Distance&&pos >Output.Road[0]) return;
+					}
+					/*如果寻找到了出口且当前逃脱路线为最短路线，更新Output中的距离与路径*/
+						Output.Distance = Dist[i] + 1;
+						Output.Road = (Index*)malloc(sizeof(int)* Dist[i]);
+						for (Index j = Dist[i] - 1; j >= 0; j--) {
+							Output.Road[j] = i;
+							i = Prior[i];
+					}
+					return;
+				}
+				EnQueue(Q, i);
+			}
+		}
+	}
+	DeleteQueue(Q);
+}
+int isEntrance(int D, VertexNode Node) {
+	return ((int)pow(D + DIAMETER / 2, 2)) < (int)(pow(Node.x, 2) + pow(Node.y, 2)) ? No : Yes;
+}
+
+void Save007(Graph G) {
+	Output.Distance = 0;
+	for (Index i = 1; i <= G->N_Vertex; i++) {
+		if (isEntrance(G->Distance,G->L[i])) BFS(G,i);/*历遍所有顶点寻找能进行第一跳的顶点，即入口顶点，对每一个入口顶点执行单源最短路径算法寻找出口*/
+		}
+	if (Output.Distance == 0)printf("0\n");
+	else {
+		printf("%d\n",Output.Distance);
+		for (Index i = 0; i < Output.Distance - 1; i++) {
+			printf("%d %d\n",G->L[Output.Road[i]].x, G->L[Output.Road[i]].y);
+		}
+	}
+}
+
+int main() {
+	Graph G = CreGraph();
+	Save007(G);
+	free(G);
+	free(Output.Road);
+	return 0;
+}
