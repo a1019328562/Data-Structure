@@ -1,0 +1,145 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<math.h>
+#define Index int
+#define MAXSIZE 500
+#define MAXDIS 250000
+#define MAXCOST 250000
+#define True 1
+#define False 0
+int Cost[MAXSIZE];
+int Dist[MAXSIZE];
+Index Path[MAXSIZE];
+Index Collected[MAXSIZE] = {False};
+typedef struct Edge {
+	Index V1, V2;
+	int Cost;
+	int Distance;
+}Edge;
+
+typedef struct AdjNode {
+	Index Pos;
+	int Distance;
+	int Cost;
+	struct AdjNode *Next;
+}*AdjNode;
+
+typedef struct VertexNode {
+	AdjNode FirstNode;
+}VertexList[MAXSIZE],VertexNode;
+
+
+typedef struct Graph {
+	int N_City,M_Edge,Start,Destination;
+	VertexList L;
+}*Graph;
+
+void AddEdge(Graph G, Edge E) {
+	AdjNode Temp = (AdjNode)malloc(sizeof(struct AdjNode));
+	Temp->Pos = E.V2;
+	Temp->Cost = E.Cost;
+	Temp->Distance = E.Distance;
+	Temp->Next = G->L[E.V1].FirstNode;
+	G->L[E.V1].FirstNode = Temp;
+
+	Temp= (AdjNode)malloc(sizeof(struct AdjNode));
+	Temp->Pos = E.V1;
+	Temp->Cost = E.Cost;
+	Temp->Distance = E.Distance;
+	Temp->Next = G->L[E.V2].FirstNode;
+	G->L[E.V2].FirstNode = Temp;
+}
+
+void DeleteGraph(Graph G) {
+	AdjNode Temp;
+	for (int i = 0; i < G->N_City; i++) {
+		if(G->L[i].FirstNode){
+		while (G->L[i].FirstNode->Next != NULL) {
+			Temp = G->L[i].FirstNode->Next;
+			G->L[i].FirstNode->Next = Temp->Next;
+			free(Temp);
+		}
+		free(G->L[i].FirstNode);
+		}
+	}
+	free(G);
+}
+
+Graph CreGraph() {
+	Graph G = (Graph)malloc(sizeof(struct Graph));
+	Edge Temp;
+	scanf("%d %d %d %d\n", &G->N_City, &G->M_Edge,&G->Start,&G->Destination);
+
+	for (int i =0; i < G->N_City; i++) {
+		G->L[i].FirstNode = NULL;
+	}
+
+	for (int i = 0; i < G->M_Edge-1; i++) {
+		scanf("%d %d %d %d\n", &Temp.V1, &Temp.V2, &Temp.Distance, &Temp.Cost);
+		AddEdge(G, Temp);
+	}
+	scanf("%d %d %d %d", &Temp.V1, &Temp.V2, &Temp.Distance, &Temp.Cost);
+	AddEdge(G, Temp);
+	return G;
+}
+
+Index FindMin(int N) {
+	Index Pos=-1;
+	int Min = MAXDIS;
+	for (int i =0; i < N; i++) {
+		if (!Collected[i] && Dist[i] < Min) {
+			Min = Dist[i];
+			Pos = i;
+		}
+	}
+	return Pos;
+}
+
+void Dijkstra(Graph G) {
+	AdjNode p;
+	Index V;
+	while (1) {
+		V = FindMin(G->N_City);
+		if (V == -1)break;
+		else {
+			Collected[V] = True;
+			p = G->L[V].FirstNode;
+			while (p) {
+				if (Collected[p->Pos] == False &&Dist[V]+p->Distance<=Dist[p->Pos]) {
+					if (Dist[V] + p->Distance < Dist[p->Pos] || (Dist[V] + p->Distance == Dist[p->Pos] && Cost[V] + p->Cost < Cost[p->Pos])) {
+						Dist[p->Pos] = Dist[V] + p->Distance;
+						Cost[p->Pos] = Cost[V] + p->Cost;
+						Path[p->Pos] = V;
+					}
+				}
+				p = p->Next;
+				
+			}
+		}
+	}
+
+}
+
+int main() {
+	Graph G = CreGraph();
+	AdjNode p = G->L[G->Start].FirstNode;
+	for (int i = 0; i < G->N_City; i++) {
+		Cost[i] = MAXCOST;
+		Dist[i] = MAXDIS;
+		Path[i] = -1;
+	}
+	Collected[G->Start] = True;
+	Cost[G->Start] = 0;
+	Dist[G->Start] = 0;
+	while (p) {
+		Cost[p->Pos] = p->Cost;
+		Dist[p->Pos] = p->Distance;
+		Path[p->Pos] = G->Start;
+		p = p->Next;
+	}
+	Dijkstra(G);
+	printf("%d %d\n", Dist[G->Destination], Cost[G->Destination]);
+	system("pause");
+	return 0;
+}
