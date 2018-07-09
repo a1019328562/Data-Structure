@@ -1,0 +1,101 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MAXVERTEX 100
+#define INFINATE 99999
+int Earliest[MAXVERTEX] = { 0 };/*储存每个检查点最早的完成时间*/
+int In_degree[MAXVERTEX] = { 0 };/*储存每个检查点的入度*/
+typedef struct MGraph {/*邻接矩阵表示法*/
+	int Edge[MAXVERTEX][MAXVERTEX];
+	int N_Checkpoint, N_Activity;
+}*MGraph;
+
+typedef struct Activity {
+	int V_Start, V_End, Cost;
+}Activity;
+
+typedef struct Queue {
+	int Data[MAXVERTEX+1];
+	int *Base,*Top;
+}*Queue;
+Queue CreQueue() {
+	Queue Q = (Queue)malloc(sizeof(struct Queue));
+	Q->Base = Q->Top = Q->Data;
+	return Q;
+}
+void EnQueue(Queue Q,int index){
+	*Q->Top++ = index;
+}
+int DeQueue(Queue Q) {
+		int index = *Q->Base++;
+		return index;
+}
+int isEmpty(Queue Q) {
+	return Q->Base == Q->Top;
+}
+
+/*初始化邻接矩阵并收Input数据于其中，同时计算每个检查点的入度*/
+MGraph CreMGraph() {
+	MGraph G = (MGraph)malloc(sizeof(struct MGraph));
+	Activity activity;
+	scanf("%d %d\n",&G->N_Checkpoint, &G->N_Activity);
+	for (int i = 0; i < G->N_Checkpoint; i++) {/*初始化邻接矩阵*/
+		for (int j = 0; j< G->N_Checkpoint; j++) {
+			G->Edge[i][j] = INFINATE;
+		}
+	}
+	for (int i = 1; i < G->N_Activity; i++) {/*收Input数据*/
+		scanf("%d %d %d\n", &activity.V_Start, &activity.V_End, &activity.Cost);
+		G->Edge[activity.V_Start][activity.V_End] = activity.Cost;
+		In_degree[activity.V_End]++;/*计算入度*/
+	}
+	scanf("%d %d %d", &activity.V_Start, &activity.V_End, &activity.Cost);
+	G->Edge[activity.V_Start][activity.V_End] = activity.Cost;
+	In_degree[activity.V_End]++;
+	return G;
+}
+
+/*查找Earliest数组中最大值，即所有检查点中最长的完成时间*/
+int FindMax(int N_Checkpoint) {
+	int max = 0;
+	for (int i = 0; i < N_Checkpoint; i++) {
+		if (Earliest[i] > max) max = Earliest[i];
+	}
+	return max;
+}
+
+/*拓扑排序算法变形*/
+void Solve(MGraph G) {
+	int index,count = 0;
+	Queue Q = CreQueue();
+	for (int i = 0; i < G->N_Checkpoint; i++) {/*将所有入度为0的顶点入队列*/
+		if (In_degree[i] == 0) { 
+			EnQueue(Q, i); 
+			count++;
+		}
+	}
+	while (isEmpty(Q) != 1 && count < G->N_Checkpoint) {
+		index = DeQueue(Q);/*弹出一个入度为0的顶点*/
+		for (int i = 0; i < G->N_Checkpoint; i++) {
+			if (G->Edge[index][i] != INFINATE && In_degree[i] != 0) {/*对于index的每一个入度不为零的邻接顶点*/
+				if (Earliest[index] + G->Edge[index][i] > Earliest[i]) Earliest[i] = Earliest[index] + G->Edge[index][i];/*更新最早完成时间*/
+				if (--In_degree[i] == 0) {/*入度减1，若减1后入度为0，压入队列*/
+					EnQueue(Q, i);
+					count++;
+				}
+			}
+		}
+	}
+	/*如果已访问元素小于顶点数，说明图中有回路*/
+	if (count == G->N_Checkpoint) {
+		printf("%d", FindMax(G->N_Checkpoint));
+	}
+	else printf("Impossible");
+	free(Q);
+}
+
+int main() {
+	MGraph G = CreMGraph();
+	Solve(G);
+	free(G);
+	return 0;
+}
