@@ -1,0 +1,213 @@
+
+/*Prim算法版*/
+#include<stdio.h>
+#include<stdlib.h>
+#define MAXVERTEX 1000
+#define INF 99999
+
+int Cost[MAXVERTEX + 1];
+
+typedef struct MGraph {
+	int N_Vertex, N_Edge;
+	int Edge[MAXVERTEX + 1][MAXVERTEX + 1];
+}*MGraph;
+
+typedef struct Edge {
+	int V1, V2, Cost;
+}Edge;
+
+MGraph Cre_MGraph() {
+	MGraph G = (MGraph)malloc(sizeof(struct MGraph));
+	Edge edge;
+	scanf("%d %d\n", &G->N_Vertex, &G->N_Edge);
+	for (int i = 1; i <= G->N_Vertex; i++) {
+		for (int j = 1; i <= G->N_Vertex; i++) {
+			G->Edge[i][j] = INF;
+		}
+	}
+	for (int i = 1; i <G->N_Edge; i++) {
+		scanf("%d %d %d\n", &edge.V1, &edge.V2, &edge.Cost);
+		G->Edge[edge.V1][edge.V2] = edge.Cost;
+		G->Edge[edge.V2][edge.V1] = edge.Cost;
+	}
+	scanf("%d %d %d", &edge.V1, &edge.V2, &edge.Cost);
+	G->Edge[edge.V1][edge.V2] = edge.Cost;
+	G->Edge[edge.V2][edge.V1] = edge.Cost;
+	return G;
+}
+
+int FindMin(MGraph G) {
+	int index=0, min = INF;
+	for (int i = 1; i <= G->N_Vertex; i++) {
+		if (Cost[i] < min&&Cost[i]!=0) {
+			index = i;
+			min = Cost[i];
+		}
+	}
+	return index;
+}
+
+
+int Prim(MGraph G) {
+	int index,count=0,total_cost=0;
+	while(1){
+	index = FindMin(G);
+	if (index == 0) break;
+	else {
+		count++;
+		total_cost += Cost[index];
+		for (int i = 1; i <= G->N_Vertex; i++) {
+			if (Cost[i] != 0&&G->Edge[index][i]!=INF) {/*对于每一个未被收录的邻接顶点*/
+				if (G->Edge[index][i] < Cost[i]) {
+					Cost[i] = G->Edge[index][i];
+				}
+			}
+		}
+		Cost[index] = 0;
+	}
+	}
+	return (count == G->N_Vertex - 1) ? total_cost : -1;/*如果收到的顶点不足N-1个，生成树不存在，返还-1，否则返还最小生成树的total_cost*/
+}
+
+int main() {
+	MGraph G = Cre_MGraph();
+	Cost[1] = 0;/*从下标为1的顶点出发生成最小生成树*/
+	for (int i = 2; i <= G->N_Vertex; i++) {/*初始化邻接矩阵及Cost数组*/
+		Cost[i] = G->Edge[1][i];
+	}
+	int Result = Prim(G);
+	free(G);
+	printf("%d", Result);
+	return 0;
+	
+/*Kruskal算法加最小堆版*/
+#include<stdio.h>
+#include<stdlib.h>
+#define MAXVERTEX 1000
+#define INF 99999
+
+typedef struct Edge {
+	int V1, V2, Cost;
+}Edge;
+
+Edge EdgeList[MAXVERTEX * 3 + 1];/*堆*/
+int N_Heap;/*堆中剩余元素个数*/
+int MGraph[MAXVERTEX + 1][MAXVERTEX + 1];/*邻接矩阵法表示最小生成树，本题用不到*/
+
+/*
+并查集：值为正时，其值为下标顶点的父节点，下标顶点非根节点；
+        值为负时，下标顶点为根结点，其值绝对值为该树的结点数*/
+int Father[MAXVERTEX + 1];
+
+/*返还下标为index的顶点的根节点*/
+int FindRoot(int index) {
+	if (Father[index]<0) return index;
+	else {
+		return Father[index] = FindRoot(Father[index]);/*路径压缩*/
+	}
+}
+
+/*将index1与index2下标所属的两个并集合并为一个*/
+void Merge_Union(int index1, int index2) {
+	int rootA = FindRoot(index1);
+	int rootB = FindRoot(index2);
+	/*按结点数大小决定归并A到B还是归并B到A*/
+	if (Father[rootA] < Father[rootB]) {
+		Father[rootA] += Father[rootB];
+		Father[rootB] = rootA;
+	}
+	else {
+		Father[rootB] += Father[rootA];
+		Father[rootA] = rootB;
+	}
+}
+
+/*判断index1与index2是否属于一个并集，如果是返还1，否则返还0*/
+int isUnion(int index1,int index2) {
+	return FindRoot(index1) == FindRoot(index2) ? 1 : 0;
+}
+
+/*将EdgeList数组中以root为根的二叉树调整成最小堆*/
+void Build_MinHeap(int root) {
+	int i = root;
+	Edge temp = EdgeList[i];
+	for (i=i*2; i<=N_Heap; i*=2) {
+		if (i < N_Heap&&EdgeList[i + 1].Cost < EdgeList[i].Cost)i++;
+		if (EdgeList[i].Cost < temp.Cost) EdgeList[i / 2] = EdgeList[i];
+		else break;
+	}
+	EdgeList[i / 2] = temp;
+}
+/*最小堆为空堆返还1，否则返还0*/
+int isEmpty() {
+	return N_Heap == 0;
+}
+/*返还并删除最小堆堆顶元素，并将剩下元素调整为最小堆*/
+Edge Delete_MinHeap() {
+	Edge min = EdgeList[1];
+	Edge temp = EdgeList[N_Heap--];
+	int i = 1;
+	for (i = i * 2; i <= N_Heap; i *= 2) {
+		if (i < N_Heap&&EdgeList[i + 1].Cost < EdgeList[i].Cost)i++;/*找左右儿子中Cost值较小者*/
+		if (EdgeList[i].Cost < temp.Cost) EdgeList[i / 2] = EdgeList[i];
+		else break;
+	}
+	EdgeList[i / 2] = temp;
+	return min;
+}
+
+/*用EdgeList数组接收Input数据并将EdgeList数组调整为最小堆*/
+void Cre_MinHeap(int N_Edge) {
+	EdgeList[0].Cost = INF;
+	EdgeList[0].V1 = EdgeList[0].V2 = 0;
+	for (int i = 1; i <N_Edge; i++) {
+		scanf("%d %d %d\n", &EdgeList[i].V1, &EdgeList[i].V2, &EdgeList[i].Cost);
+
+	}
+	scanf("%d %d %d", &EdgeList[N_Edge].V1, &EdgeList[N_Edge].V2, &EdgeList[N_Edge].Cost);
+	N_Heap = N_Edge;
+	for (int i = N_Edge / 2; i > 0; i--) {/*自最后一个父节点开始沿数组向前调整数组EdgeList为最小堆*/
+		Build_MinHeap(i);
+	}
+}
+
+void Ini_MGraph(int N_Vertex) {/*初始化邻接矩阵，本题用不到*/
+	for (int i = 1; i <= N_Vertex; i++) {
+		for (int j = 1; i <= N_Vertex; i++) {
+			if(i==j)MGraph[i][j] = 0;
+			else{
+				MGraph[i][j] = INF;
+			}
+		}
+	}
+}
+
+int Kruskal(int N_Vertex) {
+	int count=0, total_cost=0;/*count记录最小生成树已收录边数，total_cost记录总花费*/
+	Edge edge;
+	while (isEmpty() != 1&& count<N_Vertex-1) {/*已收录边数不足N-1且最小堆不空时不断循环*/
+		edge = Delete_MinHeap();
+		if (isUnion(edge.V1, edge.V2) == 0) {/*如果边连接的两个顶点不属于一个同一个并集，即边加入最小生成树后不构成回路*/
+			count++;
+			total_cost += edge.Cost;
+			Merge_Union(edge.V1, edge.V2);/*将边连接的两个并集合并为一个*/
+
+			/*向邻接矩阵中插入边，用于输出最小生成树路径，本题用不到*/
+			MGraph[edge.V1][edge.V2] = edge.Cost;
+			MGraph[edge.V2][edge.V1] = edge.Cost;
+		}
+	}
+	return (count == N_Vertex - 1) ? total_cost : -1;
+}
+
+int main() {
+	int N_Vertex, N_Edge, Result;
+	scanf("%d %d\n", &N_Vertex, &N_Edge);
+	Ini_MGraph(N_Vertex);
+	Cre_MinHeap(N_Edge);
+	for (int i = 1; i <= N_Vertex; i++)Father[i] = -1;
+	Result = Kruskal(N_Vertex);
+	printf("%d", Result);
+	return 0;
+}
+}
