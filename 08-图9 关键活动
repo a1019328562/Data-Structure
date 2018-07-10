@@ -1,0 +1,208 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MAXVERTEX 100
+#define INFINATE 99999
+
+int Out_degree[MAXVERTEX + 1] = { 0 };
+int In_degree[MAXVERTEX+1] = { 0 };
+int Earliest[MAXVERTEX + 1] = { 0 };
+int Latest[MAXVERTEX + 1];/*Latest数组初始化为无穷大*/
+
+/*邻接表表示法*/
+typedef struct AdjNode {
+	int Index;
+	int Cost;
+	struct AdjNode *Next;
+}*AdjNode;
+
+typedef struct VNode {
+	AdjNode Out_FistNode;/*正邻接表*/
+	AdjNode In_FistNode;/*逆邻接表*/
+}VNodeList[MAXVERTEX+1];
+
+typedef struct Graph {
+	VNodeList Data;
+	int N_Vertex, N_Edge;
+}*Graph;
+
+typedef struct Edge {
+	int V_Start, V_End, Cost;
+}Edge;
+
+typedef struct Queue {
+	int Data[MAXVERTEX+1];
+	int *Base,*Top;
+}*Queue;
+Queue CreQueue() {
+	Queue Q = (Queue)malloc(sizeof(struct Queue));
+	Q->Base = Q->Top = Q->Data;
+	return Q;
+}
+void EnQueue(Queue Q,int index){
+	*Q->Top++ = index;
+}
+int DeQueue(Queue Q) {
+		int index = *Q->Base++;
+		return index;
+}
+int isEmpty(Queue Q) {
+	return Q->Base == Q->Top;
+}
+/*查找Earliest数组中最大值，即所有检查点中最长的完成时间*/
+int FindMax(int N) {
+	int max = 0;
+	for (int i = 0; i <= N; i++) {
+		if (Earliest[i] > max) max = Earliest[i];
+	}
+	return max;
+}
+
+void Insert_Edge(Graph G,Edge edge) {/*每条边插入两次，分别在图中生成起始顶点的正邻接顶点以及终止顶点的逆邻接顶点*/
+	AdjNode temp = (AdjNode)malloc(sizeof(struct AdjNode));
+	temp->Cost = edge.Cost;
+	temp->Index = edge.V_End;
+	temp->Next = G->Data[edge.V_Start].Out_FistNode;
+	G->Data[edge.V_Start].Out_FistNode = temp;
+
+	temp = (AdjNode)malloc(sizeof(struct AdjNode));
+	temp->Cost = edge.Cost;
+	temp->Index = edge.V_Start;
+	temp->Next = G->Data[edge.V_End].In_FistNode;
+	G->Data[edge.V_End].In_FistNode = temp;
+}
+void Delete_Graph(Graph G) {/*删除为图分配的动态内存*/
+	AdjNode temp;
+	for (int i = 1; i <= G->N_Vertex; i++) {
+		if (G->Data[i].Out_FistNode != NULL) {
+			while (G->Data[i].Out_FistNode->Next != NULL) {
+				temp = G->Data[i].Out_FistNode->Next;
+				G->Data[i].Out_FistNode->Next = temp->Next;
+				free(temp);
+			}
+			free(G->Data[i].Out_FistNode);
+		}
+
+		if (G->Data[i].In_FistNode != NULL) {
+			while (G->Data[i].In_FistNode->Next != NULL) {
+				temp = G->Data[i].In_FistNode->Next;
+				G->Data[i].In_FistNode->Next = temp->Next;
+				free(temp);
+			}
+			free(G->Data[i].In_FistNode);
+		}
+		
+	}
+	free(G);
+}
+/*接收Input数据构建邻接表，同时统计每个顶点的入度以及出度*/
+Graph Cre_Graph() {
+	Graph G = (Graph)malloc(sizeof(struct Graph));
+	Edge edge;
+	scanf("%d %d\n", &G->N_Vertex, &G->N_Edge);
+	for (int i = 1; i <= G->N_Vertex; i++) {
+		G->Data[i].Out_FistNode = NULL;
+		G->Data[i].In_FistNode = NULL;
+	}
+	for (int i = 1; i < G->N_Edge; i++) {
+		scanf("%d %d %d\n", &edge.V_Start, &edge.V_End, &edge.Cost);
+		Insert_Edge(G, edge);
+		In_degree[edge.V_End]++;/*统计入度*/
+		Out_degree[edge.V_Start]++;/*统计出度*/
+	}
+	scanf("%d %d %d", &edge.V_Start, &edge.V_End, &edge.Cost);
+	Insert_Edge(G, edge);
+	In_degree[edge.V_End]++;
+	Out_degree[edge.V_Start]++;
+	return G;
+}
+/*历遍每一个关键检查点，历遍其逆邻接表中的每一条边，寻找并输出其中不容延误的关键边*/
+void Print_Key(Graph G) {
+	AdjNode W;
+	for (int i = 1; i <= G->N_Vertex; i++) {
+		if (Earliest[i] == Latest[i]) {/*对于每一个关键检查点*/
+			W = G->Data[i].Out_FistNode;
+			while (W) {
+				/*如果一条边的起始顶点的最早完成时间加上边的权重正好等于其终点顶点的最迟开始时间，说明该边为关键活动*/
+				if (Earliest[i] + W->Cost == Latest[W->Index]) printf("%d->%d\n", i, W->Index);
+				W = W->Next;
+			}
+		}
+	}
+}
+/*拓扑排序算法变形，计算最早完成时间，并判断任务调度是否可行，若可以返还1，否则返还0*/
+int Calculate_Earliest(Graph G) {
+	int index, count = 0;
+	Queue Q = CreQueue();
+	AdjNode W;
+	for (int i = 1; i <= G->N_Vertex; i++) {/*将所有入度为0的顶点入队列*/
+		if (In_degree[i] == 0) {
+			EnQueue(Q, i);
+			count++;
+		}
+	}
+	while (isEmpty(Q) != 1 && count < G->N_Vertex) {
+		index = DeQueue(Q);/*弹出一个入度为0的顶点*/
+		W = G->Data[index].Out_FistNode;
+		while (W != NULL) {
+			if (In_degree[W->Index] != 0) {/*对于index的每一个入度不为零的邻接顶点*/
+				if (Earliest[W->Index] < Earliest[index] + W->Cost) Earliest[W->Index] = Earliest[index] + W->Cost;/*更新最早完成时间*/
+				if (--In_degree[W->Index] == 0) {/*入度减1，若减1后入度为0，压入队列*/
+					EnQueue(Q, W->Index);
+					count++;
+				}
+			}
+			W = W->Next;
+		}
+	}
+	free(Q);
+	/*如果已访问元素小于顶点数，说明图中有回路*/
+	if (count == G->N_Vertex) return 1;
+	else return 0;
+
+}
+/*拓扑排序算法变形，计算最晚完成时间*/
+void Calculate_Latest(Graph G,int earliest) {
+	Queue Q = CreQueue();
+	AdjNode W;
+	int index;
+	for (int i = G->N_Vertex; i > 0; i--) {/*将所有出度为0的顶点入队列，并初始化其最迟完成时间为整个项目的最早完成时间*/
+		if (Out_degree[i] == 0) {
+			EnQueue(Q, i);
+			Latest[i] = earliest;
+		}
+	}
+	while (isEmpty(Q) != 1) {
+		index = DeQueue(Q);
+		W = G->Data[index].In_FistNode;
+		while (W) {
+			if (Out_degree[W->Index] != 0) {
+				if (Latest[W->Index] > Latest[index] - W->Cost) Latest[W->Index] = Latest[index] - W->Cost; /*更新最晚完成时间*/
+				if (--Out_degree[W->Index] == 0) EnQueue(Q, W->Index);
+			}
+			W = W->Next;
+		}
+	}
+	free(Q);
+}
+
+int main() {
+	int Result, earliest;
+	Graph G = Cre_Graph();/*接收input数据生成图*/
+	for (int i = 1; i <= G->N_Vertex; i++) {/*初始化Latest数组*/
+		Latest[i] = INFINATE;
+	}
+	Result=Calculate_Earliest(G);/*计算最早完成时间*/
+	if (Result == 0) {/*任务调度不可行*/
+		printf("0");
+		return 0;
+	}
+	else {
+		earliest = FindMax(G->N_Vertex);
+		printf("%d\n", earliest);
+		Calculate_Latest(G,earliest);
+		Print_Key(G);
+
+		Delete_Graph(G);
+		return 0;
+	}
+}
