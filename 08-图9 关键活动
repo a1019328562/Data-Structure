@@ -7,8 +7,7 @@ int Out_degree[MAXVERTEX + 1] = { 0 };
 int In_degree[MAXVERTEX+1] = { 0 };
 int Earliest[MAXVERTEX + 1] = { 0 };
 int Latest[MAXVERTEX + 1];/*Latest数组初始化为无穷大*/
-
-/*邻接表表示法*/
+/*邻接表法表示图*/
 typedef struct AdjNode {
 	int Index;
 	int Cost;
@@ -115,14 +114,14 @@ Graph Cre_Graph() {
 	Out_degree[edge.V_Start]++;
 	return G;
 }
-/*历遍每一个关键检查点，历遍其逆邻接表中的每一条边，寻找并输出其中不容延误的关键边*/
+/*历遍每一个关键检查点，历遍其逆邻接表中的每一条边，寻找并输出其中不容延误的关键边（活动）*/
 void Print_Key(Graph G) {
 	AdjNode W;
 	for (int i = 1; i <= G->N_Vertex; i++) {
 		if (Earliest[i] == Latest[i]) {/*对于每一个关键检查点*/
 			W = G->Data[i].Out_FistNode;
 			while (W) {
-				/*如果一条边的起始顶点的最早完成时间加上边的权重正好等于其终点顶点的最迟开始时间，说明该边为关键活动*/
+				/*如果一条边的起始顶点的最早完成时间加上边的权重正好等于其终点顶点的最迟开始时间，说明该边为不容延误的关键活动*/
 				if (Earliest[i] + W->Cost == Latest[W->Index]) printf("%d->%d\n", i, W->Index);
 				W = W->Next;
 			}
@@ -192,11 +191,11 @@ int main() {
 		Latest[i] = INFINATE;
 	}
 	Result=Calculate_Earliest(G);/*计算最早完成时间*/
-	if (Result == 0) {/*任务调度不可行*/
+	if (Result == 0) {/*若任务调度不可行*/
 		printf("0");
 		return 0;
 	}
-	else {
+	else {/*若任务调度可行，输出项目所需总时间以及所有关键节点*/
 		earliest = FindMax(G->N_Vertex);
 		printf("%d\n", earliest);
 		Calculate_Latest(G,earliest);
