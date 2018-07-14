@@ -1,0 +1,260 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+
+void swap(int *a, int *b) {
+	int temp = *a;
+	*a = *b;
+	*b = temp;
+}
+/*冒泡排序*/
+void Bubble_Sort(int *A, int N) {
+	int flag;
+	for (int i = N - 1; i > 0; i--) {
+		flag = 0;
+		for (int j = 0; i < i; j++) {
+			if (A[i] > A[i + 1]) {
+				swap(&A[i], &A[i + 1]);
+				flag = 1;
+			}
+		}
+		if (flag == 0) break;
+	}	
+}
+/*插入排序*/
+void Insert_Sort(int *A, int N) {
+	int card,i,j;
+	for (i = 1; i < N; i++) {
+		card = A[i];
+		for (j = i; j > 0; j--) {
+			if (A[j - 1] > card) A[j] = A[j - 1];
+			else break;
+		}
+		A[j] = card;
+	}
+}
+/*Hibbard增量序列版希尔排序*/
+void Shell_Sort1(int *A, int N) {
+	int D, temp,card,j,Hi = 1;
+	while(1) {/*初始Hibbard增量不能超过待排序列长度*/
+		Hi++;
+		if (((int)pow(2, Hi) - 1) >= N) {
+			Hi--;
+			break;
+		}
+	}
+	D = (int)pow(2, Hi) - 1;
+	for (; D > 0; D = (int)pow(2, --Hi) - 1) {
+		for (int P = D; P < N; P++) {/* 插入排序*/
+			card = A[P];
+			for (j = P; j >= D && A[j - D] > card; j -= D) {
+				A[j] = A[j - D];
+			}
+			A[j] = card;
+		}
+	}
+}
+/*Sedgewick增量序列版希尔排序*/
+void Shell_Sort2(int *A, int N) {
+	int D, card, j, Si;
+	int Sedgewick[] = { 929, 505, 209, 109, 41, 19, 5, 1, 0 };
+	for (Si = 0; Sedgewick[Si] >= N; Si++) {}/* 初始的增量Sedgewick[Si]不能超过待排序列长度 */
+	for (D = Sedgewick[Si]; D > 0; D = Sedgewick[++Si]) {
+		for (int P = D; P < N; P++) {/* 插入排序*/
+			card = A[P];
+			for (j = P; j >= D && A[j - D] > card; j -= D) {
+				A[j] = A[j - D];
+			}
+			A[j] = card;
+		}
+	}
+}
+/*堆排序*/
+void PercDown(int *A, int Root, int N) {
+	int Parent, Child, temp = A[Root];
+	for (Parent = Root; Parent * 2 + 1 <= N - 1; Parent = Child) {
+		Child = Parent * 2 + 1;
+		if (Child != N - 1 && A[Child + 1] > A[Child]) Child++;/*Child定位到左右儿子中较大者*/
+		if (A[Child] > temp) A[Parent] = A[Child];
+		else break;
+	}
+	A[Parent] = temp;
+}
+
+void Heap_Sort(int *A, int N) {
+	for (int i = N / 2; i >= 0; i--) {
+		PercDown(A, i, N);
+	}
+	for (int i = N - 1; i > 0; i--) {
+		swap(&A[0], &A[i]);
+		PercDown(A, 0, i);
+	}
+}
+/*归并排序递归版*/
+void Merge(int *A, int *tempA, int L_Start, int R_Start, int R_End) {
+	int ptrL, ptrR, ptrP;
+	ptrL = ptrP = L_Start;
+	ptrR = R_Start;
+	while (ptrL <= R_Start - 1 && ptrR <= R_End) {
+		tempA[ptrP++] = A[ptrL] <= A[ptrR] ? A[ptrL++] : A[ptrR++];
+	}
+	while (ptrL <= R_Start - 1) tempA[ptrP++] = A[ptrL++];
+	while (ptrR <= R_End) tempA[ptrP++] = A[ptrR++];
+	for (int i = L_Start; i <= R_End; i++) {
+		A[i] = tempA[i];
+	}
+}
+
+void MSort1(int *A, int *tempA, int L_Start, int R_End) {
+	int Center = (L_Start + R_End) / 2;
+	if (L_Start < R_End) {
+		MSort(A, tempA, L_Start,Center);
+		MSort(A, tempA, Center+1,R_End);
+		Merge(A, tempA, L_Start, Center + 1, R_End);
+	}
+}
+
+void Merge_Sort1(int *A, int N) {
+	int *tempA = (int*)malloc(sizeof(int)*N);
+	MSort1(A, tempA, 0, N - 1);
+	free(tempA);
+}
+/*归并排序迭代版*/
+void Merge1(int *A, int *tempA, int L_Start, int R_Start, int R_End) {
+	/*注意，该函数与与递归版中的Merge函数存在区别，Merge完成后有序结果保留在tempA数组中，而非A数组*/
+	int ptrL, ptrR, ptrP;
+	ptrL = ptrP = L_Start;
+	ptrR = R_Start;
+	while (ptrL <= R_Start - 1 && ptrR <= R_End) {
+		tempA[ptrP++] = A[ptrL] <= A[ptrR] ? A[ptrL++] : A[ptrR++];
+	}
+	while (ptrL <= R_Start - 1) tempA[ptrP++] = A[ptrL++];
+	while (ptrR <= R_End) tempA[ptrP++] = A[ptrR++];
+}
+
+void MSort2(int *A,int *tempA,int Lenth,int N) {
+	int i;
+	for (i = 0; i <= N - 2 * Lenth; i += 2 * Lenth) {
+		Merge(A, tempA, i, i + Lenth, i + 2 * Lenth - 1);
+	}
+	if (i + Lenth < N) Merge(A, tempA, i, i + Lenth, N - 1);
+	else {
+		for (; i < N; i++) tempA[i] = A[i];
+	}
+}
+
+
+void Merge_Sort2(int *A, int N) {
+	int *tempA = (int*)malloc(sizeof(int)*N);
+	int Lenth = 1;
+	while (Lenth < N) {
+		MSort2(A, tempA, Lenth, N);
+		Lenth *= 2;
+		MSort2(A, tempA, Lenth, N);
+		Lenth *= 2;
+	}
+	free(tempA);
+}
+
+/*快速排序*/
+/*对头中尾三个位置内的数据进行排序并将中位数与尾前一位数据进行交换，返还中位数*/
+int Median3(int *A, int L, int R) {
+	int Center = (L + R) / 2;
+	if (A[L] > A[Center]) swap(&A[L], &A[Center]);
+	if(A[L] > A[R]) swap(&A[L], &A[R]);
+	if (A[Center] > A[R]) swap(&A[Center], &A[R]);
+	swap(&A[Center], &A[R - 1]);
+	return A[R - 1];
+}
+/*主递归函数*/
+void QuickSort(int *A, int L, int R) {
+	int Pivot;
+	int Cutoff,ptrL=L,ptrR=R-1;
+	if(L-R>=Cutoff){
+		Pivot = Median3(A, L, R);
+	while (1) {
+		while (A[++ptrL] < Pivot) {};
+		while (A[--ptrR] > Pivot) {};
+		if (ptrL < ptrR) swap(&A[ptrL], &A[ptrR]);
+		else break;
+	}
+	swap(&A[ptrL], &A[R - 1]);
+	QuickSort(A, L, ptrL-1);
+	QuickSort(A, ptrL + 1, R);
+	}
+	else Insert_Sort(A + L, R - L + 1);
+}
+/*统一接口的正式函数*/
+void Quick_Sort(int *A, int N) {
+	QuickSort(A, 0, N - 1);
+}
+/*基数排序*/
+#define Radix 10
+#define MaxDigit 3
+int GetDigit(int X, int D) {
+	int result;
+	for (int i = 0; i < D; i++) {
+		result = X % Radix;
+		X = X / Radix;
+	}
+	return result;
+}
+
+typedef struct BucketNode{/*链表结点*/
+	int key;
+	struct BucketNode *Next;
+}*BucketNode;
+
+typedef struct HeadNode {/*链表头结点*/
+	BucketNode Head;
+	BucketNode Tail;
+}Bucket[Radix];
+/*基数排序，次位优先*/
+LSD_Radix_Sort(int *A, int N) {
+	int digit;
+	Bucket Data;
+	BucketNode temp,List = (BucketNode*)malloc(sizeof(struct BucketNode));/*链表头节点*/
+	List->Next = NULL;
+	for (int i = 0; i < Radix; i++) {
+		Data[i].Head = Data[i].Tail = NULL;
+	}
+	for (int i = 0; i < N; i++) {
+		temp = (BucketNode*)malloc(sizeof(struct BucketNode));
+		temp->key = A[i];
+		temp->Next = List->Next;
+		List->Next = temp;
+	}
+	for (int i = 1; i <= MaxDigit; i++) {/*对数据的每一位按从低到高顺序进行桶排序*/
+		while (List->Next != NULL) {/*将链表中所有结点依次摘掉并以尾插法插到对应桶中*/
+			temp = List->Next;
+			digit = GetDigit(temp->key, i);/*计算当前节点的当前次位*/
+			List->Next = temp->Next;/*从链表中摘除当前结点*/
+			temp->Next = NULL;
+			if (Data[digit].Head == NULL) {
+				Data[digit].Head = Data[digit].Tail = temp;
+			}
+			else {
+				Data[digit].Tail->Next = temp;
+				Data[digit].Tail = temp;
+			}
+		}
+		/*将排好序的所有节点从桶中依次回收到链表*/
+		List->Next = NULL;
+		for (int i = Radix-1; i >=0; i--) {
+			while (Data[i].Head != NULL) {/*如果桶不为空*/
+			    /* 整桶插入List表头 */
+				Data[i].Tail->Next = List->Next;
+				List->Next = Data[i].Head;
+				Data[i].Head = Data[i].Tail = NULL;/*清空桶*/
+			}
+		}
+	}
+	/* 将List倒入A[]并释放空间 */
+	for (int i = 0; i < N; i++) {
+		temp = List->Next;
+		A[i] = temp->key;
+		List->Next = temp->Next;
+		free(temp);
+	}
+	free(List);
+}
