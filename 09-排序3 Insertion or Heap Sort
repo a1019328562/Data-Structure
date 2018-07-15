@@ -1,0 +1,84 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MAX_N 100
+
+void Swap(int *a, int *b) {
+	int temp = *a;
+	*a = *b;
+	*b = temp;
+}
+
+int isInsert(int Ini[],int Step[], int N) {/*判断Inupt数据是否经插入排序处理*/
+	int index,i;
+	for (index = 1; index <= N - 1; index++) {/*找到第一个未排好序的数据的下标*/
+		if (Step[index] < Step[index - 1]) break;
+	}
+	/*如果自第一个未排好序数据开始往后的序列与初始数据序列一致，说明为插入排序*/
+	for (i = index; i < N; i++) {
+		if (Ini[i] != Step[i]) break;
+	}
+	if (i == N) {/*如果为插入排序，print结果并返还第一个未排好序的数据下标*/
+		printf("Insertion Sort\n");
+		return index;
+	}
+	else {/*如果非插入排序，返还-1*/
+		printf("Heap Sort\n");
+		return -1;
+	}
+}
+
+void Print_NextStep_Insert(int Step[], int N,int index) {/*输出插入排序下一步结果*/
+	int i,card = Step[index];
+	for (i = index; i > 0; i--) {
+		if (card < Step[i - 1]) Step[i] = Step[i - 1];
+		else break;
+	}
+	Step[i] = card;
+	for (int i = 0; i < N-1; i++) {
+		printf("%d ", Step[i]);
+	}
+	printf("%d\n", Step[N - 1]);
+}
+
+void Print_NextStep_HeapSort(int *A, int N) {
+	int i, temp, parent, child;
+	for (i = N - 1; i > 0; i--) {/*找到当前堆的最后一个元素位置*/
+		if (A[i] < A[0]) break;
+	}
+	/*执行下一步堆排序*/
+	Swap(&A[i], &A[0]);
+	i--;
+	temp = A[0];/*temp初始化为当前堆顶元素*/
+	for (parent = 0; parent*2+1 <= i; parent = child) {/*将新的堆顶元素放到堆中合适位置*/
+		child = parent * 2 + 1;
+		if (child != i && A[child + 1] > A[child]) child++;/*找到左右儿子元素中较大者*/
+		if (A[child] > temp) A[parent] = A[child];
+		else break;
+	}
+	A[parent] = temp;
+	for (int i = 0; i < N - 1; i++) {
+		printf("%d ", A[i]);
+	}
+	printf("%d\n", A[N - 1]);
+}
+
+
+int main() {
+	int N,Result;
+	int Ini[MAX_N], Step[MAX_N];
+	/*收Input数据*/
+	scanf("%d\n", &N);
+	for (int i = 0; i < N-1; i++) {
+		scanf("%d", &Ini[i]);
+	}
+	scanf("%d\n", &Ini[N - 1]);
+	for (int i = 0; i < N; i++) {
+		scanf("%d", &Step[i]);
+	}
+	Result = isInsert(Ini, Step, N);/*判断Step是否为插入排序处理后结果*/
+	if (Result != -1) {/*返还值若不是-1说明Step经过了插入排序处理*/
+		Print_NextStep_Insert(Step, N, Result);
+	}
+	else Print_NextStep_HeapSort(Step, N);/*否则Step经过了堆排序处理*/
+	return 0;
+}
