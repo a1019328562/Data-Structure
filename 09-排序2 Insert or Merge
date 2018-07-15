@@ -1,0 +1,98 @@
+#include<stdio.h>
+#include<stdlib.h>
+#define MAX_N 100
+
+int isInsert(int Ini[],int Step[], int N) {/*判断Inupt数据是否经插入排序处理*/
+	int index,i;
+	for (index = 1; index <= N - 1; index++) {/*找到第一个未排好序的数据的下标*/
+		if (Step[index] < Step[index - 1]) break;
+	}
+	/*如果自第一个未排好序数据开始往后的序列与初始数据序列一致，说明为插入排序*/
+	for (i = index; i < N; i++) {
+		if (Ini[i] != Step[i]) break;
+	}
+	if (i == N) {/*如果为插入排序，print结果并返还第一个未排好序的数据下标*/
+		printf("Insertion Sort\n");
+		return index;
+	}
+	else {/*如果非插入排序，返还-1*/
+		printf("Merge Sort\n");
+		return -1;
+	}
+}
+
+void Print_NextStep_Insert(int Step[], int N,int index) {/*输出插入排序下一步结果*/
+	int i,card = Step[index];
+	for (i = index; i > 0; i--) {
+		if (card < Step[i - 1]) Step[i] = Step[i - 1];
+		else break;
+	}
+	Step[i] = card;
+	for (int i = 0; i < N-1; i++) {
+		printf("%d ", Step[i]);
+	}
+	printf("%d\n", Step[N - 1]);
+}
+
+int getLenth_MergeSort(int Step[], int N) {/*找到归并排序下一个待完成归并的的lenth长度*/
+	int lenth, index;
+	for (lenth = 2; lenth <= N / 2; lenth *= 2) {/*由题意归并排序至少进行了一步，lenth初始化为2*/
+		for (index = lenth-1; index < N - 1; index += 2 * lenth) {/*如果段与段间均已完成排序，说明当前lenth已完成归并*/
+			if (Step[index] > Step[index + 1]) {/*如果发现任意一个段间未完成排序，返还当前lenth*/
+				return lenth;
+			}
+		}
+	}
+}
+
+void Merge(int A[],int tempA[], int LStart, int RStart, int REnd) {/*完成当前段落归并排序*/
+	int ptrL, ptrT, ptrR;
+	ptrL = ptrT = LStart;
+	ptrR = RStart;
+	while (ptrL <= RStart - 1 && ptrR <= REnd) {
+		tempA[ptrT++] = A[ptrL] <= A[ptrR] ? A[ptrL++] : A[ptrR++];
+	}
+	while (ptrL <= RStart - 1) tempA[ptrT++] = A[ptrL++];
+	while (ptrR <= REnd) tempA[ptrT++] = A[ptrR++];
+	for (int i = LStart; i <= REnd; i++) {
+		A[i] = tempA[i];
+	}
+}
+
+void Print_NextStep_Merge(int Step[], int N) {/*完成并输出经下一步归并后的Step数列*/
+	int *tempA = (int*)malloc(sizeof(int)*N);
+	int i,lenth = getLenth_MergeSort(Step, N);/*找到待归并的下一个lenth*/
+	/*完成lenth长度的归并*/
+	for (i = 0; i <= N - 2 * lenth; i += 2 * lenth) {
+		Merge(Step, tempA, i, i + lenth, i + 2 * lenth - 1);
+	}
+	if (i + lenth < N) {
+		Merge(Step, tempA, i, i + lenth, i + 2 * lenth - 1);
+	}
+	/*输出归并结果*/
+	for (int i = 0; i < N - 1; i++) {
+		printf("%d ", Step[i]);
+	}
+	printf("%d\n", Step[N - 1]);
+	free(tempA);
+};
+
+int main() {
+	int N,Result;
+	int Ini[MAX_N], Step[MAX_N];
+	/*收Input数据*/
+	scanf("%d\n", &N);
+	for (int i = 0; i < N-1; i++) {
+		scanf("%d", &Ini[i]);
+	}
+	scanf("%d\n", &Ini[N - 1]);
+	for (int i = 0; i < N; i++) {
+		scanf("%d", &Step[i]);
+	}
+	Result = isInsert(Ini, Step, N);/*判断Step是否为插入排序处理后结果*/
+	if (Result != -1) {/*返还值若不是-1说明Step经过了插入排序处理*/
+		Print_NextStep_Insert(Step, N, Result);
+	}
+	else Print_NextStep_Merge(Step, N);/*否则Step经过了归并函数处理*/
+	return 0;
+}
