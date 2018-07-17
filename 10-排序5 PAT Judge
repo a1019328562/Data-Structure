@@ -1,0 +1,162 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#define MAX_N 10005
+#define MAX_K 5
+#define MAX_M 100005
+int MaxMark[MAX_K + 1];/*保存每道题的满分值*/
+int *Data[MAX_N];/*指针数组用于保存用户数据，指针指向一个保存总成绩、各题分数、用户编号的一维数组*/
+
+void Swap(int **a, int **b) {/*交换两个用户在Data数组中的位置*/
+	int *temp = *a;
+	*a = *b;
+	*b = temp;
+}
+
+typedef struct Submission {/*记录每次提交数据的结构体*/
+	char Id[6];
+	int K;
+	int Score;
+}Submission;
+
+int Id_To_Index(char *id) {/*将Input中的编号转化为数组下标*/
+	int Index = 0;
+	for (int i = 4; i >= 0; i--) {
+		Index += (id[4-i]-'0') *(int)pow(10, i);
+	}
+	return Index-1;
+}
+
+int PerfectSolved(int *a, int K) {/*返还用户取得满分的题的个数*/
+	int count=0;
+	for (int i = 1; i <= K; i++) {
+		if (a[i] == MaxMark[i]) count++;
+	}
+	return count;
+}
+
+int Former_isBiger(int *a, int *b,int K) {/*比较a,b用户分数高低，当分数相同时根据取得满分的题数以及用户编号大小来判断结果*/
+	if (a[0] > b[0]) return 1;
+	else if (a[0] == b[0]) {/*当分数相同时*/
+		/*取得满分的题数多的用户视为成绩更好，如果题数也一样多，那么按照用户编号大小来比较*/
+		if (PerfectSolved(a, K) > PerfectSolved(b, K) ||
+			PerfectSolved(a, K) == PerfectSolved(b, K) &&
+			a[6] < b[6]) return 1;
+	}
+	return 0;
+}
+
+void Shell_sort(int **A,int N,int K){
+	if (N < 2) return;
+	int i,j,k,D,*temp;
+	/*找到小于N的最大D值以及对应的i*/
+	for (i = 0; pow(2, i+1) - 1 < N; i++) {}
+	for (D = (int)pow(2, i--) - 1; D > 0; D = (int)pow(2, i--) - 1) {
+		for (j = D; j < N; j++) {
+			temp = A[j];
+			for (k = j; k >= D ; k -= D) {
+				/*if (A[k - D][0] >= temp[0]) {*/
+				if (Former_isBiger(A[k - D], temp, K) == 1) {
+					Swap(&A[k - D], &A[k]);
+				}   
+				else break;
+			}
+			A[k] = temp;
+		}
+	}
+}
+
+void Judege(int N, int K, int M) {/*依次接收每一次提交的数据*/
+	Submission temp;
+	int index, increase;
+	for (int i = 0; i < M-1; i++) {
+		scanf("%s %d %d\n", &temp.Id, &temp.K, &temp.Score);
+		if (temp.Score != -1) {/*如果提交的数据通过了编译*/
+			index = Id_To_Index(temp.Id);/*将ID转化为用户数组下标*/
+			if (Data[index][0] == -1) Data[index][0] = 0;/*如果这是该用户首次通过编译，将其总成绩从-1刷新成0*/
+			if (Data[index][temp.K] < temp.Score) {/*如果该次提交的分数高于用户该题的最高记录，更新该题最高纪录，更新该用户获得的总分*/
+				increase = Data[index][temp.K] == -1 ? temp.Score : temp.Score - Data[index][temp.K];
+				Data[index][temp.K] = temp.Score;
+				Data[index][0] += increase;
+			}
+		}
+	}
+	//处理Input数据结尾处的换行符//
+	scanf("%s %d %d", &temp.Id, &temp.K, &temp.Score);
+	if (temp.Score != -1) {
+		index = Id_To_Index(temp.Id);
+		if (Data[index][0] == -1) Data[index][0] = 0;
+		if (Data[index][temp.K] < temp.Score) {
+			increase = Data[index][temp.K] == -1 ? temp.Score : temp.Score - Data[index][temp.K];
+			Data[index][temp.K] = temp.Score;
+			Data[index][0] += increase;
+		}
+	}
+}
+
+int median3(int **A, int L, int R,int K) {/*快速排序组件函数*/
+	int Center = (L + R) / 2;
+	if (Former_isBiger(A[L], A[Center], K) == 1) {
+		Swap(&A[L], &A[Center]);
+	}
+	if(Former_isBiger(A[L], A[R], K) == 1) Swap(&A[L], &A[R]);
+	if (Former_isBiger(A[Center], A[R], K) == 1) Swap(&A[Center], &A[R]);
+	Swap(&A[Center], &A[R-1]);
+	return A[R - 1][0];
+}
+
+
+void QuickSort(int *A[], int L,int R,int K) {/*快速排序*/
+	int ptrL = L, ptrR = R-1, Cutoff = 5;
+	if (R - L >= Cutoff) {
+		int Pivot = median3(A, L, R,K);
+		while (1) {
+			while (Former_isBiger(A[++ptrL], A[R - 1], K) == 0) {}
+			while (Former_isBiger(A[--ptrR], A[R - 1], K) == 1) {
+			};
+			if (ptrL < ptrR) Swap(&A[ptrL], &A[ptrR]);
+			else break;
+		}
+		Swap(&A[ptrL], &A[R-1]);
+		QuickSort(A, L, ptrL-1,K);
+		QuickSort(A, ptrL + 1, R,K);
+	}
+	else Shell_sort(A+L, R - L + 1,K);
+}
+
+void PrintRank(int N,int K) {/*输出排名结果*/
+	int rank=0, score=0;/*score记录当前排名的分数，如果下一个用户的分数与之一样，那么下一个用户的排名亦与之一样*/
+	for (int i = N-1; i >= 0; i--) {/*从后往前历遍按分数排序好的用户*/
+		if (Data[i][0] != -1) {/*如果用户至少有一题通过了一次编译，输出排名和总分*/
+			if (Data[i][0] != score) {
+				rank++;
+				score = Data[i][0];
+			}
+			printf("%d %.5d %d ", rank,Data[i][6],Data[i][0]);
+			for (int j = 1; j < K; j++) {/*输出每一题取得的分数*/
+				if (Data[i][j] != -1) printf("%d ", Data[i][j]);
+				else printf("- ");
+			}
+			if (Data[i][K] != -1) printf("%d\n", Data[i][K]);
+			else printf("-\n");
+		}
+	}
+}
+
+	int main(){
+		int N, K, M;
+		scanf("%d %d %d\n",&N,&K,&M);
+		for (int i = 1; i < K; i++) {
+			scanf("%d", &MaxMark[i]);
+		}
+		scanf("%d\n", &MaxMark[K]);
+		for (int i = 0; i < N; i++) {
+			Data[i] = (int*)malloc(sizeof(int)*(7));
+			Data[i][0] = Data[i][1] = Data[i][2] = Data[i][3] = Data[i][4] = Data[i][5] = -1;
+			Data[i][6] = i + 1;
+		}
+		Judege(N, K, M);
+		QuickSort((int**)Data, 0, N - 1,K);
+		PrintRank(N, K);
+		return 0;
+	}
