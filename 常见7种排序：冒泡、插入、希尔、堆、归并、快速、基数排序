@@ -150,7 +150,7 @@ void Merge_Sort2(int *A, int N) {
 	while (Lenth < N) {
 		MSort2(A, tempA, Lenth, N);
 		Lenth *= 2;
-		MSort2(A, tempA, Lenth, N);
+		MSort2(tempA, A, Lenth, N);
 		Lenth *= 2;
 	}
 	free(tempA);
