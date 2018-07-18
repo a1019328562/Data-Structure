@@ -1,0 +1,39 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#define MAX_N 100000
+int Find[MAX_N];/*数组保存以下标为关键词的元素的当前位置*/
+
+int Find_Mispair(int* Find,int N) {/*找到Find数组中下一个位置放置不当的元素并返还其当前位置*/
+	for (int i = 1; i < N; i++) {/*历遍关键词从1到N-1的每一个元素*/
+		if (Find[i] != -1) return Find[i];
+	}
+	return -1;
+}
+
+int main() {
+	int N, key,index,count=0;/*count记录交换次数*/
+	scanf("%d\n", &N);
+	for (int i = 0; i < N; i++) {
+		scanf("%d", &key);
+		Find[key] = key == i ? -1 : i;/*如果当前scanf的元素放入数组后位置正好等于排序后应处位置，标记为-1*/
+	}
+	while (1) {/*不断将0所在下标对应的元素有序化，即如果0当前下标为3,将0与3当前位置进行交换*/
+		index = Find[0];
+		if (index == -1||index==0) {/*如果0回到了它自己原本的位置，即下标为0的位置，将0与数组中下一个未排好序元素交换*/
+			index = Find_Mispair(Find, N);
+			if (index == -1) break;/*如果这样的元素不存在，排序结束*/
+			else {
+				Find[0] = Find[index];/*将0当前位置更新*/
+				Find[index] = 0;/*将待交换元素位置更新*/
+				count++;/*交换次数加一*/
+				continue;
+			}
+		}
+		Find[0] = Find[index];
+		Find[index] = -1;/*当index元素完成有序化后，Find数组中对应位置标记为-1*/
+		count++;
+	}
+	printf("%d", count);
+	return 0;
+}
