@@ -1,0 +1,91 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#include<string.h>
+#define MAX_N 200000/*号码最大数目*/
+#define N_TEL 11/*手机位数*/
+typedef struct HashNode {
+	char Tel[N_TEL+1];/*电话号码*/
+	int Num;/*当前号码通话次数*/
+	struct HashNode *Next;
+}*HashNode;
+
+typedef struct HeadNode {/*哈希表*/
+	HashNode FistNode;
+}HeadNode[MAX_N];
+
+typedef struct HashList {
+	HeadNode Data;
+}*HashList;
+
+HashList Ini_HashList(int size) {
+	HashList H = (HashList)malloc(sizeof(struct HashList));
+	for (int i = 0; i < MAX_N; i++) {
+		H->Data[i].FistNode = NULL;
+	}
+	return H;
+}
+
+void Delete_HashList(HashList H) {
+	free(H);
+}
+
+int GetIndex(char *tel) {/*Hash函数，将手机号码后五位作为其储存下标*/
+	int index = 0;
+	for (int i = 6; i <= 10; i++) {
+		index = index * 10 + (tel[i]-'0');
+	}
+	return index;
+}
+
+void FindAndInsert(char a[], HashList H) {/*首先查找待插入电话号码，如果存在则通话次数加1，否则插入当前电话号码，通话次数初始化为1*/
+	int index = GetIndex(a);/*找到当前电话号码对应下标*/
+	HashNode p = H->Data[index].FistNode;
+	while (p) {
+		if (strcmp(p->Tel, a) == 0) {
+			p->Num++;
+			return;
+		}
+		else p = p->Next;
+	}
+	/*如果哈希表中当前电话号码不存在*/
+	p = (HashNode)malloc(sizeof(struct HashNode));
+	p->Num = 1;
+	strcpy(p->Tel, a);
+	p->Next = H->Data[index].FistNode;
+	H->Data[index].FistNode = p;
+}
+
+HashNode ReturnResult(HashList H) {/*寻找通话狂人，返还其结点指针*/
+	HashNode p = NULL, max = NULL;
+	for (int i = 0; i < MAX_N; i++) {/*历遍整个哈希表，找出通话次数最多的电话号码*/
+		p = H->Data[i].FistNode;
+		while (p!=NULL) {
+				if (max == NULL) max = p;
+				else if (p->Num > max->Num) max = p;
+				p = p->Next;
+		}
+	}
+	return max;
+}
+
+int main() {
+	int N;
+	char telA[N_TEL + 1] = { 0 };
+	char telB[N_TEL + 1] = { 0 };
+	HashNode Result = NULL;
+	scanf("%d\n", &N);
+	HashList H = Ini_HashList(N*2);
+	for (int i = 0; i < N-1; i++) {/*依次接收Input电话号码*/
+		scanf("%s %s\n", telA, telB);
+		FindAndInsert(telA, H);
+		FindAndInsert(telB, H);
+	}
+	scanf("%s %s", telA, telB);
+	FindAndInsert(telA, H);
+	FindAndInsert(telB, H);
+	Result = ReturnResult(H);/*寻找通话狂人*/
+	Delete_HashList(H);
+	printf("%s %d", Result->Tel, Result->Num);
+	return 0;
+}
