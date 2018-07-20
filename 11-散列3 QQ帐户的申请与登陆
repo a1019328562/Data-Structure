@@ -1,0 +1,139 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#include<string.h>
+#define MAX_Size 100000
+#define PassWordLenth 16
+int Output[MAX_Size];
+int count;
+typedef struct UserInform {
+	long long Account;
+	char Password[PassWordLenth + 1];
+	char tag;/*tag为1、0代表散列表中该位置有、无用户信息；tag为'L'、'N'分别代表登陆以及创建账号的指令信息*/
+}*UserInform,Instruction;
+
+typedef struct HashTable {
+	UserInform User;
+	int TableSize;
+}*HashTable;
+
+int Hash(long long Account ,int TableSize) {
+	return (Account% MAX_Size + Account / MAX_Size) % TableSize;
+}
+
+int NextPrime(int TableSize) {/*如果当前TableSize为素数直接返还其自身，否则返还比TableSize大的最小素数*/
+	int i;
+	if(TableSize % 2) {
+		for (i = 3; i*i < TableSize; i++) {
+			if (TableSize%i == 0)break;
+		}
+		if (i*i > TableSize) return TableSize;
+	}
+	TableSize = TableSize % 2 ? TableSize + 2 : TableSize + 1;
+	while (1) {
+		for (i = 3; i*i < TableSize; i++) {
+			if (TableSize%i == 0)break;
+		}
+		if (i*i > TableSize) return TableSize;
+		TableSize += 2;
+	}
+	}
+
+HashTable Ini_HashTable(int TableSize) {
+	HashTable H = (HashTable)malloc(sizeof(struct HashTable));
+	H->TableSize= NextPrime(TableSize);
+	H->User = (UserInform)malloc(sizeof(struct UserInform)*H->TableSize);
+	for (int i = 0; i < H->TableSize; i++) {
+		H->User[i].tag = 0;
+	}
+	return H;
+}
+
+void DeleteHashTable(HashTable H) {
+	free(H->User);
+	free(H);
+}
+
+void Execute_Instruction(Instruction order,HashTable H) {/*执行指令，将待输出结果存入Output数组*/
+	int index = Hash(order.Account, H->TableSize);
+	int i = index, j = 0, sign = 0;
+	if (order.tag == 'N') {/*如果指令为'N'*/
+		/*首先判断该账号是否存在*/
+		while (H->User[i].tag != 0 && H->User[i].Account!=order.Account) {
+			if (i > H->TableSize / 2) {
+				printf("Insert is fail!\n");
+				return;/*如果平方探针超过TableSize的一半认为插入失败*/
+			}
+			if (sign == 0|| sign == -1) {
+				sign = 1;
+				j++;
+				i = (index + j * j)%H->TableSize;
+			}
+			else {
+				sign = -1;
+				i = (index - j * j)%H->TableSize;
+			}
+		}
+		if (H->User[i].tag == 0) {/*如果散列表中不存在当前Account，插入当前Account*/
+			order.tag = 1;
+			H->User[i] = order;
+			Output[count++] = 1;
+			return;
+		}
+		else {/*如果当前账号已存在*/
+			Output[count++] = 2;
+			return;
+		}
+	}
+	else {/*如果指令为'L'*/
+		while (H->User[i].tag != 0 && H->User[i].Account != order.Account) {
+			if (i > H->TableSize / 2) {
+				Output[count++] = 4;/*散列表中未找到当前ID*/
+				return;
+			}
+			if (sign == 0 || sign == -1) {
+				sign = 1;
+				j++;
+				i = (index + j * j) % H->TableSize;
+			}
+			else {
+				sign = -1;
+				i = (index - j * j) % H->TableSize;
+			}
+		}
+		if (H->User[i].tag == 0) {/*散列表中未找到当前ID*/
+			Output[count++] = 4;
+			return;
+		}
+		else {/*找到当前账号，核对密码*/
+			if (strcmp(H->User[i].Password, order.Password) == 0) Output[count++] = 3;
+			else Output[count++] = 5;
+			return;
+		}
+	}
+}
+
+int main() {
+	int N;
+	count = 0;
+	scanf("%d\n", &N);
+	HashTable H = Ini_HashTable(N);
+	Instruction order;
+	for (int i = 0; i < N - 1; i++) {
+		scanf("%c %lld %s\n", &order.tag, &order.Account, &order.Password);
+		Execute_Instruction(order, H);
+	}
+	scanf("%c %lld %s", &order.tag, &order.Account, &order.Password);
+	Execute_Instruction(order, H);
+	for (int i = 0; i < N; i++) {
+		switch (Output[i]) {
+		case 1: printf("New: OK\n"); break;
+		case 2: printf("ERROR: Exist\n"); break;
+		case 3: printf("Login: OK\n"); break;
+		case 4: printf("ERROR: Not Exist\n"); break;
+		case 5: printf("ERROR: Wrong PW\n");
+		}
+	}
+	DeleteHashTable(H);
+	return 0;
+}
