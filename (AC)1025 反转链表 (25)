@@ -1,0 +1,96 @@
+
+#include<cstdio>
+#include<string>
+#include<iostream>
+#include<cstring>
+#include<algorithm>
+#include<vector>
+using namespace std;
+
+#define Max 100000
+int Node_num;
+typedef struct Node{
+	int Data;
+	int address;
+	int next_address;
+	struct Node *Next;
+}Node;
+
+Node* AddNode(int address,int data,int next_address,Node *rear ){
+	Node *p = (Node*)malloc(sizeof(struct Node));
+	p->Data=data;
+	p->address=address;
+	p->next_address=next_address;
+	p->Next=NULL;
+	rear->Next=p;
+	return p;
+}
+
+Node* Reverse(int K,Node *L){
+	Node *pre,*p,*next;
+	int count=1;
+	pre=L->Next;
+	p=pre->Next;
+	while(count<K){
+		next=p->Next;
+		p->Next=pre;
+		p->next_address=pre->address;
+		pre=p;
+		p=next; 
+		count++;                                                               
+		}
+	L->Next->Next=p;
+	if(p!=NULL){
+		L->Next->next_address=p->address;
+	}
+	return pre;
+}
+
+int main(){
+	Node_num=0;
+	int Array[Max][2];
+	int first,address,next,val,N,K;
+	scanf("%d %d %d\n",&first,&N,&K);
+	for(int i=0;i<N;i++){
+		if(i==N-1){
+		   scanf("%d %d %d",&address,&val,&next);
+		   	Array[address][0]=val;
+		   	Array[address][1]=next;
+		   }
+		else {
+			scanf("%d %d %d\n",&address,&val,&next);
+		   	Array[address][0]=val;
+		   	Array[address][1]=next;
+		}
+	}
+	address=first;
+	Node *List=(Node*)malloc(sizeof(struct Node));
+	Node *rear=NULL;
+	while(address!=-1){
+		if(rear==NULL){
+			rear=AddNode(address,Array[address][0],Array[address][1],List);
+			Node_num++;
+		}
+		else{
+			rear=AddNode(address,Array[address][0],Array[address][1],rear);
+			Node_num++;
+		}
+		address=Array[address][1];
+	}
+	Node *temp=List;
+	if(K>1){
+		while(Node_num>=K){
+		temp->Next=Reverse(K,temp);
+		if(temp!=List) temp->next_address=temp->Next->address;
+		for(int i=0;i<K;i++) temp=temp->Next;
+		Node_num-=K;
+	}
+}
+		List=List->Next;
+		while(List->Next!=NULL){
+			printf("%05d %d %05d\n",List->address,List->Data,List->next_address);
+		List=List->Next;
+		}
+		printf("%05d %d -1",List->address,List->Data);
+	return 0;
+}
